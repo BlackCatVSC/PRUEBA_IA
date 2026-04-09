@@ -116,7 +116,7 @@ Esto permite adaptar el comportamiento del modelo al contexto organizacional.
 ## Diagrama del Sistema
 
 <p align="center">
-  <img src="diagrama.png" width="600">
+  <img src="Diagrama.png" width="600">
 </p>
 
 ---
