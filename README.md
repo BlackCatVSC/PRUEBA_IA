@@ -6,10 +6,10 @@ En el contexto actual de transformación digital, las instituciones financieras 
 
 El presente proyecto tiene como objetivo el desarrollo de un chatbot inteligente orientado a la atención de clientes de BancoEstado, capaz de responder consultas frecuentes como:
 
-- Cuentas bancarias  
-- Tarjetas (bloqueo, activación)  
-- Transferencias  
-- Servicios digitales 
+- Como crear cuentas bancarias (RUT, Cuenta de ahorro, Cuenta corriente/Vista etc.) 
+- Como bloquear tarjetas en caso de perdida, activacion de una cuenta.
+- Como hacer transferencias  
+- Servicios digitales (como hacer: consultas de saldo, transferencias en línea, pagos de cuentas y uso de aplicaciones bancarias)
 
 de manera clara, precisa y en tiempo real. Para ello, se integran tecnologías como GitHub Models API y LangChain, permitiendo construir un sistema conversacional con memoria, contexto y una experiencia de usuario mejorada. Por ello el ChatBot busca:
 
