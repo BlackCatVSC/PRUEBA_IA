@@ -2,21 +2,25 @@
 
 ## 1. Introduccion
 
-En el contexto actual de transformación digital, las instituciones financieras enfrentan el desafío de mejorar la atención al cliente mediante soluciones eficientes, rápidas y disponibles en todo momento. En este escenario, el uso de inteligencia artificial, específicamente modelos de lenguaje (LLM), se presenta como una alternativa innovadora para automatizar la interacción con los usuarios. 
+En el contexto actual de transformación digital, las instituciones financieras enfrentan el desafío de mejorar la atención al cliente mediante soluciones eficientes, rápidas y disponibles en todo momento. En este escenario, el uso de inteligencia artificial, específicamente modelos de lenguaje (LLM), se presenta como una alternativa innovadora para automatizar la interacción con los usuarios.
 
 El presente proyecto tiene como objetivo el desarrollo de un chatbot inteligente orientado a la atención de clientes de BancoEstado, capaz de responder consultas frecuentes como:
 
-- Como crear cuentas bancarias (RUT, Cuenta de ahorro, Cuenta corriente/Vista etc.) 
-- Como bloquear tarjetas en caso de perdida, activacion de una cuenta.
-- Como hacer transferencias  
-- Servicios digitales (como hacer: consultas de saldo, transferencias en línea, pagos de cuentas y uso de aplicaciones bancarias)
+- Cómo crear cuentas bancarias (CuentaRUT, cuenta de ahorro, cuenta corriente/vista)
+- Cómo bloquear tarjetas en caso de pérdida o activarlas
+- Cómo realizar transferencias
+- Uso de servicios digitales (consultas de saldo, pagos en línea, uso de aplicaciones bancarias)
 
-de manera clara, precisa y en tiempo real. Para ello, se integran tecnologías como GitHub Models API y LangChain, permitiendo construir un sistema conversacional con memoria, contexto y una experiencia de usuario mejorada. Por ello el ChatBot busca:
+de manera clara, precisa y en tiempo real.
 
-- Automatizar respuestas a preguntas frecuentes  
-- Mejorar la disponibilidad del servicio (24/7)  
-- Reducir tiempos de espera  
-- Entregar información clara y accesible al usuario  
+Para ello, se integran tecnologías como GitHub Models API y LangChain, junto con técnicas de Prompt Engineering, permitiendo construir un sistema conversacional con memoria, contexto y una experiencia de usuario mejorada.
+
+Por ello, el chatbot busca:
+
+- Automatizar respuestas a preguntas frecuentes
+- Mejorar la disponibilidad del servicio (24/7)
+- Reducir tiempos de espera
+- Entregar información clara y accesible al usuario 
 
 ---
 
@@ -94,14 +98,21 @@ Esto transforma el sistema en un chatbot más natural y no en un sistema de resp
 
 ## 4. Prompt Engineering (IL1.1)
 
-Se diseñó un prompt específico para el contexto bancario, donde el modelo:
+En el desarrollo del chatbot se aplicaron técnicas de Prompt Engineering con el objetivo de mejorar la calidad, coherencia y seguridad de las respuestas generadas por el modelo de lenguaje.
 
-- Asume el rol de asistente de BancoEstado  
-- Responde consultas sobre servicios financieros  
-- Utiliza lenguaje claro y formal  
-- Evita solicitar datos sensibles  
+En primer lugar, se utilizó la técnica de Zero-shot prompting, donde se define un mensaje de sistema que establece el rol del modelo como asistente virtual de BancoEstado, indicando claramente su propósito, tipo de respuestas esperadas, formato de salida y restricciones de seguridad.
 
-Esto permite adaptar el comportamiento del modelo al contexto organizacional.
+Además, se incorporó la técnica de Few-shot prompting, mediante la inclusión de ejemplos de preguntas y respuestas relacionadas con el contexto bancario. Esto permitió mejorar la consistencia del modelo y guiar su comportamiento en consultas frecuentes como bloqueo de tarjetas o apertura de cuentas.
+
+El prompt diseñado incluye:
+
+- Definición de rol (asistente bancario)  
+- Objetivo de respuesta (clara, breve y formal)
+- Formato estructurado (respuesta, pasos, advertencias y canal oficial)
+- Restricciones de seguridad (no solicitar datos sensibles)
+- Uso del historial conversacional como contexto
+
+Estas técnicas permiten que el chatbot genere respuestas más precisas, coherentes y alineadas al contexto del sistema, mejorando significativamente la experiencia del usuario.
 
 ---
 
@@ -125,7 +136,8 @@ Esto permite adaptar el comportamiento del modelo al contexto organizacional.
 
 - El sistema no solicita datos sensibles del usuario  
 - Las respuestas son informativas  
-- Para operaciones críticas, se recomienda uso de canales oficiales  
+- Para operaciones críticas, se recomienda uso de canales oficiales
+- Se identificó que el uso de técnicas de "few-shot prompting" junto con "memoria conversacional" puede generar confusión en el modelo, ya que los ejemplos proporcionados pueden ser interpretados como parte del historial real de la conversación. Esto puede afectar la precisión en preguntas relacionadas con memoria. Como mejora futura, se recomienda separar el uso de ejemplos del historial o aplicarlos solo en ciertos contextos.    
 
 ---
 
