@@ -1,128 +1,114 @@
 # Chatbot BancoEstado - Informe del Proyecto 
 
-## 1. Introduccion
+## 1. Introducción
 
 En el contexto actual de transformación digital, las instituciones financieras enfrentan el desafío de mejorar la atención al cliente mediante soluciones eficientes, rápidas y disponibles en todo momento. En este escenario, el uso de inteligencia artificial, específicamente modelos de lenguaje (LLM), se presenta como una alternativa innovadora para automatizar la interacción con los usuarios.
 
-El presente proyecto tiene como objetivo el desarrollo de un chatbot inteligente orientado a la atención de clientes de BancoEstado, capaz de responder consultas frecuentes como:
+El presente proyecto tiene como objetivo el desarrollo de un chatbot inteligente orientado a la atención de clientes de BancoEstado, capaz de responder consultas frecuentes relacionadas con:
 
-- Cómo crear cuentas bancarias (CuentaRUT, cuenta de ahorro, cuenta corriente/vista)
-- Cómo bloquear tarjetas en caso de pérdida o activarlas
-- Cómo realizar transferencias
-- Uso de servicios digitales (consultas de saldo, pagos en línea, uso de aplicaciones bancarias)
+- Creación de cuentas bancarias (CuentaRUT, cuenta de ahorro, cuenta vista)
+- Bloqueo y gestión de tarjetas
+- Transferencias bancarias
+- Uso de servicios digitales
 
-de manera clara, precisa y en tiempo real.
+El sistema busca entregar respuestas claras, seguras y en tiempo real, mejorando la experiencia del usuario y optimizando los canales de atención.
 
-Para ello, se integran tecnologías como GitHub Models API y LangChain, junto con técnicas de Prompt Engineering, permitiendo construir un sistema conversacional con memoria, contexto y una experiencia de usuario mejorada.
-
-Por ello, el chatbot busca:
-
-- Automatizar respuestas a preguntas frecuentes
-- Mejorar la disponibilidad del servicio (24/7)
-- Reducir tiempos de espera
-- Entregar información clara y accesible al usuario 
+Para ello, se integran tecnologías como GitHub Models API, LangChain, técnicas de Prompt Engineering y arquitectura RAG, permitiendo construir un sistema conversacional con memoria, contexto y alta precisión.
 
 ---
 
-## 2. Problematica
+## 2. Problemática
 
-Las instituciones financieras, como BancoEstado, enfrentan una alta demanda de consultas por parte de los usuarios, especialmente relacionadas con operaciones básicas, servicios digitales y gestión de productos bancarios. Esta situación genera una sobrecarga en los canales tradicionales de atención, como sucursales físicas, call centers y plataformas en línea.
+Las instituciones financieras presentan una alta demanda de consultas por parte de los usuarios, lo que genera sobrecarga en canales tradicionales como sucursales, call centers y plataformas digitales.
 
-Frente a este escenario, surge la necesidad de implementar soluciones basadas en inteligencia artificial que permitan optimizar la atención al cliente, mejorar la eficiencia operativa y ofrecer respuestas rápidas y accesibles en todo momento.
+Esto provoca:
+- Tiempos de espera elevados
+- Saturación de los canales de atención
+- Baja eficiencia en la resolución de consultas simples
+
+Frente a esta problemática, surge la necesidad de implementar soluciones basadas en inteligencia artificial que permitan automatizar respuestas, mejorar la disponibilidad del servicio y optimizar la experiencia del usuario.
 
 ---
 
 ## 3. Implementación de la Solución
 
-La solución fue desarrollada mediante la integración de distintas tecnologías abordadas durante el curso. Inicialmente, estas fueron implementadas en notebooks separados, para posteriormente ser unificadas en una sola estructura funcional. 
-A partir de esta integración, se construyó un chatbot capaz de responder consultas de clientes de manera precisa, clara y amigable, utilizando modelos de lenguaje y herramientas especializadas para el manejo de conversaciones.
+La solución fue desarrollada integrando distintas tecnologías abordadas durante el curso, inicialmente en notebooks separados, y posteriormente unificadas en una sola arquitectura funcional.
+
+El sistema final corresponde a un chatbot inteligente capaz de mantener conversaciones, recordar contexto y responder consultas utilizando información relevante.
+
+---
 
 ### 3.1 GitHub Models API
 
-Se utilizó el cliente de OpenAI conectado a GitHub Models para realizar llamadas directas a modelos de lenguaje, permitiendo interactuar con el sistema de inteligencia artificial mediante una API. 
-
-El uso de esta tecnología fue fundamental, ya que permitió integrar modelos avanzados como GPT-4o dentro de la aplicación, facilitando la generación de respuestas automáticas a partir de las consultas del usuario.
+Se utilizó la API de GitHub Models para conectarse a modelos de lenguaje avanzados como GPT-4o.
 
 Esto permitió:
-- Conectarse al modelo GPT-4o de manera segura mediante el uso de variables de entorno
-- Configurar parámetros como "temperature" para controlar la creatividad de las respuestas
-- Definir límites de respuesta mediante "max_tokens", optimizando el uso de recurso
-- Obtener respuestas dinámicas en tiempo real desde una API externa
+- Generar respuestas dinámicas en tiempo real
+- Configurar parámetros como temperatura y tokens
+- Integrar inteligencia artificial mediante API
 
 ---
 
 ### 3.2 LangChain Model API
 
-Se utilizó el framework LangChain como una capa de abstracción sobre el modelo de lenguaje, con el objetivo de facilitar la construcción de aplicaciones conversacionales más estructuradas y escalables.
+LangChain fue utilizado como framework para estructurar la interacción con el modelo, permitiendo:
 
-El uso de LangChain permitió organizar de manera eficiente la interacción con el modelo, mediante el manejo de mensajes estructurados y el uso de roles (system, user, assistant), lo que contribuye a generar respuestas más coherentes y contextualizadas.
-
-Esta herramienta facilitó:
-
-- La creación de conversaciones "multi-turno", manteniendo el contexto entre interacciones 
-- La integración de memoria conversacional para mejorar la continuidad del diálogo 
-- La implementación de streaming, permitiendo respuestas en tiempo real
-
-Esto permite construir aplicaciones más complejas de forma modular.
+- Manejo de mensajes estructurados (system, user, assistant)
+- Conversaciones multi-turno
+- Integración de memoria conversacional
+- Arquitectura modular y escalable
 
 ---
 
 ### 3.3 Streaming (Respuestas en Tiempo Real)
 
-Se implementó la funcionalidad de streaming con el objetivo de mejorar la experiencia de usuario, permitiendo que las respuestas del modelo se generen y muestren de manera progresiva en tiempo real, en lugar de esperar a que la respuesta completa esté disponible.
-
-Esta técnica permite simular un comportamiento más natural en el chatbot, similar al de una conversación humana, donde las respuestas se construyen de forma gradual.
+Se implementó streaming para mostrar respuestas progresivas, mejorando la experiencia del usuario.
 
 Ventajas:
-- Mejora la percepción de velocidad, ya que el usuario observa resultados de inmediato 
-- Simula escritura en tiempo real y genera una experiencia más interactiva y dinámica
-- Mantiene la atención del usuario durante la generación de la respuesta  
+- Mayor percepción de velocidad
+- Simulación de escritura en tiempo real
+- Interacción más natural
 
 ---
 
 ### 3.4 Memoria Conversacional
 
-Se implementó memoria conversacional mediante el uso de InMemoryChatMessageHistory, con el objetivo de permitir que el chatbot mantenga el contexto a lo largo de múltiples interacciones con el usuario.
+Se utilizó InMemoryChatMessageHistory para mantener el contexto de la conversación.
 
-A diferencia de un sistema tradicional de preguntas y respuestas aisladas, la incorporación de memoria permite que el modelo recuerde mensajes anteriores, logrando una conversación más coherente, fluida y natural.
-
-La funcionalidad permite:
-
-- Mantener el contexto de la conversación entre distintas preguntas 
-- Generar respuestas más precisas basadas en interacciones anteriores  
-- Generar respuestas coherentes y simula un comportamiento más cercano a una conversación humana
-
-Esto transforma el sistema en un chatbot más natural y no en un sistema de respuestas aisladas, capaz de adaptarse al flujo del diálogo y mejorar significativamente la experiencia del usuario.
+Esto permite:
+- Recordar interacciones previas
+- Responder de manera coherente
+- Simular una conversación real
 
 ---
 
-## 4. Prompt Engineering (IL1.1)
+## 4. Prompt Engineering
 
-En el desarrollo del chatbot se aplicaron técnicas de Prompt Engineering con el objetivo de mejorar la calidad, coherencia y seguridad de las respuestas generadas por el modelo de lenguaje.
+Se aplicaron técnicas de:
 
-En primer lugar, se utilizó la técnica de Zero-shot prompting, donde se define un mensaje de sistema que establece el rol del modelo como asistente virtual de BancoEstado, indicando claramente su propósito, tipo de respuestas esperadas, formato de salida y restricciones de seguridad.
+- Zero-shot prompting (definición de rol y comportamiento)
+- Few-shot prompting (ejemplos guiados)
 
-Además, se incorporó la técnica de Few-shot prompting, mediante la inclusión de ejemplos de preguntas y respuestas relacionadas con el contexto bancario. Esto permitió mejorar la consistencia del modelo y guiar su comportamiento en consultas frecuentes como bloqueo de tarjetas o apertura de cuentas.
+El prompt incluye:
+- Rol del asistente
+- Formato estructurado de respuesta
+- Restricciones de seguridad
+- Uso de contexto y memoria
 
-El prompt diseñado incluye:
-
-- Definición de rol (asistente bancario)  
-- Objetivo de respuesta (clara, breve y formal)
-- Formato estructurado (respuesta, pasos, advertencias y canal oficial)
-- Restricciones de seguridad (no solicitar datos sensibles)
-- Uso del historial conversacional como contexto
-
-Estas técnicas permiten que el chatbot genere respuestas más precisas, coherentes y alineadas al contexto del sistema, mejorando significativamente la experiencia del usuario.
+Esto mejora significativamente la calidad de las respuestas.
 
 ---
 
-## 5. Funcionalidades del Sistema 
+## 5. Funcionalidades del Sistema
 
 - Chat interactivo en tiempo real  
 - Respuestas con streaming  
-- Memoria de conversación  
-- Uso de modelo LLM (GPT-4o)  
-- Contexto especializado en BancoEstado
+- Memoria conversacional  
+- Uso de modelo GPT-4o  
+- Contexto especializado en BancoEstado  
+- Recuperación de información mediante RAG  
+
+---
 
 ## Diagrama del Sistema
 
@@ -132,15 +118,105 @@ Estas técnicas permiten que el chatbot genere respuestas más precisas, coheren
 
 ---
 
-## 6. Consideraciones
+## 6. Implementación de RAG (Retrieval-Augmented Generation)
 
-- El sistema no solicita datos sensibles del usuario  
+Se implementó la técnica RAG con el objetivo de mejorar la precisión del chatbot y evitar la generación de respuestas incorrectas.
+
+RAG permite que el modelo:
+1. Recupere información relevante desde una base de conocimiento
+2. Genere respuestas basadas en ese contexto
+
+El flujo es:
+
+Usuario → Embedding → FAISS → Recuperación → Respuesta
+
+Esto permite entregar respuestas más confiables y basadas en información real.
+
+---
+
+## 7. Base Vectorial y Embeddings
+
+Se utilizó FAISS como base de datos vectorial para almacenar embeddings generados a partir de los textos.
+
+Proceso:
+- División de textos (chunking)
+- Conversión a embeddings
+- Almacenamiento en FAISS
+- Búsqueda por similitud semántica
+
+Esto permite que el sistema entienda el significado de las preguntas, no solo palabras exactas.
+
+---
+
+## 8. Memoria Híbrida
+
+El sistema implementa una memoria híbrida compuesta por:
+
+- Memoria estructurada (historial)
+- Memoria vectorial (FAISS)
+- Resumen conversacional (summary)
+
+Esto permite:
+- Mantener coherencia
+- Reducir uso de tokens
+- Mejorar contexto en respuestas
+
+---
+
+## 9. Evaluación del Sistema RAG
+
+Se evaluó el chatbot utilizando tres métricas:
+
+- Faithfulness (fidelidad)
+- Relevancia
+- Context Precision
+
+Resultados:
+
+- Faithfulness: 0.60  
+- Relevancia: 0.80  
+- Context Precision: 0.90  
+
+Interpretación:
+
+- Excelente recuperación de contexto (RAG funciona correctamente)
+- Buena capacidad de respuesta
+- Presencia de algunas alucinaciones
+
+---
+
+## 10. Análisis de Resultados
+
+Los resultados muestran que:
+
+- El sistema recupera correctamente información relevante
+- Las respuestas son en su mayoría adecuadas
+- Existen casos donde el modelo genera información no presente en el contexto
+
+Esto indica que el principal desafío es mejorar la fidelidad del modelo.
+
+---
+
+## 11. Consideraciones
+
+- El sistema no solicita datos sensibles  
 - Las respuestas son informativas  
-- Para operaciones críticas, se recomienda uso de canales oficiales
-- Se identificó que el uso de técnicas de "few-shot prompting" junto con "memoria conversacional" puede generar confusión en el modelo, ya que los ejemplos proporcionados pueden ser interpretados como parte del historial real de la conversación. Esto puede afectar la precisión en preguntas relacionadas con memoria. Como mejora futura, se recomienda separar el uso de ejemplos del historial o aplicarlos solo en ciertos contextos.    
+- Se recomienda el uso de canales oficiales  
+- Se identificaron limitaciones en el uso combinado de few-shot y memoria  
+
+---
+
+## 12. Conclusión
+
+El chatbot desarrollado integra tecnologías modernas de inteligencia artificial como RAG, embeddings, bases vectoriales y memoria híbrida, logrando un sistema conversacional avanzado.
+
+El sistema demuestra un alto nivel de precisión en la recuperación de información y una buena calidad de respuesta, aunque aún presenta desafíos relacionados con la fidelidad del modelo.
+
+En conclusión, el proyecto logra cumplir los objetivos propuestos, ofreciendo una solución eficiente, escalable y alineada con las necesidades actuales de atención al cliente en el ámbito financiero.
 
 ---
 
 ## Autores 
 
-- [Luciano Garrido y Isidora Ayala]
+- Luciano Garrido  
+- Isidora Ayala
