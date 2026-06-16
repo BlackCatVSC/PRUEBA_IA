@@ -1,0 +1,741 @@
+<!DOCTYPE html><html class="light" lang="es" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>BancoEstado ChatBot - Asistente Virtual</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#8e7164",
+                        "surface-container-highest": "#e1e2e4",
+                        "on-primary-fixed-variant": "#7c2e00",
+                        "secondary-fixed": "#d4e3ff",
+                        "on-tertiary-fixed": "#001d35",
+                        "surface-tint": "#a33e00",
+                        "tertiary-fixed": "#d0e4ff",
+                        "outline-variant": "#e3bfb1",
+                        "primary-fixed-dim": "#ffb596",
+                        "on-secondary-container": "#fdfcff",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#a4c9ff",
+                        "surface-container": "#edeef0",
+                        "inverse-primary": "#ffb596",
+                        "on-tertiary-container": "#003155",
+                        "primary": "#ff6600",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#e7e8ea",
+                        "surface-container-low": "#f3f4f6",
+                        "secondary-container": "#0076d2",
+                        "on-secondary-fixed-variant": "#004883",
+                        "primary-fixed": "#ffdbcd",
+                        "surface": "#f8f9fb",
+                        "tertiary": "#0062a1",
+                        "on-surface-variant": "#5a4136",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#00497b",
+                        "inverse-surface": "#2e3132",
+                        "error-container": "#ffdad6",
+                        "secondary": "#005da8",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#360f00",
+                        "on-primary-container": "#561d00",
+                        "primary-container": "#ff6600",
+                        "tertiary-fixed-dim": "#9ccaff",
+                        "on-background": "#191c1e",
+                        "inverse-on-surface": "#f0f1f3",
+                        "background": "#f8f9fb",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d9dadc",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#009cfc",
+                        "on-surface": "#191c1e",
+                        "surface-bright": "#f8f9fb",
+                        "surface-variant": "#e1e2e4",
+                        "on-secondary-fixed": "#001c39"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "8px",
+                        "lg": "8px",
+                        "xl": "12px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-mobile": "16px",
+                        "bubble-padding": "12px 16px",
+                        "sidebar-width": "280px",
+                        "max-content-width": "1200px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .chat-input-shadow {
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.05);
+        }
+        .sidebar-transition {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .floating-anim {
+            animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background">
+
+<!-- Login Modal -->
+<div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 transition-opacity" id="login-modal-overlay" onclick="closeLogin()">
+  <div class="bg-surface rounded-2xl w-full max-w-[400px] mx-4 p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+    <div class="flex justify-end -mt-2 -mr-2">
+      <button class="p-1 rounded-full hover:bg-surface-container-high transition-colors" onclick="closeLogin()">
+        <span class="material-symbols-outlined text-on-surface-variant">close</span>
+      </button>
+    </div>
+    <div class="flex flex-col items-center -mt-2">
+      <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+        <span class="material-symbols-outlined text-white text-[36px]" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+      </div>
+      <h2 class="text-headline-md font-bold text-on-surface text-center">BancoEstado</h2>
+      <p class="text-body-md text-on-surface-variant mb-6 text-center">Ingresa a tu asistente virtual</p>
+    </div>
+    <div class="flex flex-col gap-4">
+      <div id="login-error" class="bg-error-container text-on-error-container text-body-md px-4 py-3 rounded-xl hidden"></div>
+      <div>
+        <label class="text-label-md font-medium text-on-surface-variant mb-1.5 block">Correo electronico</label>
+        <div class="flex items-center bg-white rounded-xl px-4 py-3 border border-outline-variant/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all" id="email-group">
+          <span class="material-symbols-outlined text-outline mr-3 text-[20px]">mail</span>
+          <input class="flex-grow bg-transparent border-none focus:ring-0 text-body-lg text-on-surface placeholder:text-on-surface-variant/40 outline-none" type="email" id="email-input" placeholder="ejemplo@correo.cl" autocomplete="email">
+        </div>
+      </div>
+      <div>
+        <label class="text-label-md font-medium text-on-surface-variant mb-1.5 block">Contrasena</label>
+        <div class="flex items-center bg-white rounded-xl px-4 py-3 border border-outline-variant/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all" id="password-group">
+          <span class="material-symbols-outlined text-outline mr-3 text-[20px]">lock</span>
+          <input class="flex-grow bg-transparent border-none focus:ring-0 text-body-lg text-on-surface placeholder:text-on-surface-variant/40 outline-none" type="password" id="password-input" placeholder="••••••••" autocomplete="current-password">
+        </div>
+      </div>
+      <button class="w-full bg-primary text-on-primary font-bold py-3.5 rounded-xl text-body-lg hover:bg-primary/90 transition-all shadow-md active:scale-[0.98] mt-2 flex items-center justify-center gap-2" onclick="handleLogin()" id="login-btn">
+        <span id="login-btn-text">Iniciar Sesion</span>
+        <span class="material-symbols-outlined animate-spin hidden text-[20px]" id="login-spinner">progress_activity</span>
+      </button>
+      <p class="text-body-md text-on-surface-variant text-center mt-1">
+        <a class="text-primary font-semibold hover:underline cursor-pointer" onclick="showRegister()">Crear cuenta</a> · <a class="text-primary font-semibold hover:underline" href="#">Olvidaste tu contrasena?</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Logout Confirm Modal -->
+<div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 transition-opacity" id="logout-modal-overlay" onclick="closeLogout()">
+  <div class="bg-surface rounded-2xl w-full max-w-[340px] mx-4 p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-center" onclick="event.stopPropagation()">
+    <div class="w-14 h-14 bg-error-container rounded-full flex items-center justify-center mx-auto mb-4">
+      <span class="material-symbols-outlined text-error text-[32px]">logout</span>
+    </div>
+    <h2 class="text-headline-sm font-bold text-on-surface mb-2">Cerrar Sesion</h2>
+    <p class="text-body-md text-on-surface-variant mb-6">Seguro de cerrar sesion?</p>
+    <div class="flex gap-3">
+      <button class="flex-1 bg-surface-container-high text-on-surface font-semibold py-3 rounded-xl text-body-md hover:bg-surface-container-highest transition-all active:scale-[0.98]" onclick="closeLogout()">No</button>
+      <button class="flex-1 bg-error text-on-error font-semibold py-3 rounded-xl text-body-md hover:bg-error/90 transition-all shadow-md active:scale-[0.98]" onclick="confirmLogout()">Si</button>
+    </div>
+  </div>
+</div>
+
+<!-- Register Modal -->
+<div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 transition-opacity" id="register-modal-overlay" onclick="closeRegister()">
+  <div class="bg-surface rounded-2xl w-full max-w-[400px] mx-4 p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+    <div class="flex justify-end -mt-2 -mr-2">
+      <button class="p-1 rounded-full hover:bg-surface-container-high transition-colors" onclick="closeRegister()">
+        <span class="material-symbols-outlined text-on-surface-variant">close</span>
+      </button>
+    </div>
+    <div class="flex flex-col items-center -mt-2">
+      <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+        <span class="material-symbols-outlined text-white text-[36px]" style="font-variation-settings: 'FILL' 1;">person_add</span>
+      </div>
+      <h2 class="text-headline-md font-bold text-on-surface text-center">Crear cuenta</h2>
+      <p class="text-body-md text-on-surface-variant mb-6 text-center">Registrate para usar el asistente virtual</p>
+    </div>
+    <div class="flex flex-col gap-4">
+      <div id="register-error" class="bg-error-container text-on-error-container text-body-md px-4 py-3 rounded-xl hidden"></div>
+      <div>
+        <label class="text-label-md font-medium text-on-surface-variant mb-1.5 block">Nombre completo</label>
+        <div class="flex items-center bg-white rounded-xl px-4 py-3 border border-outline-variant/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+          <span class="material-symbols-outlined text-outline mr-3 text-[20px]">person</span>
+          <input class="flex-grow bg-transparent border-none focus:ring-0 text-body-lg text-on-surface placeholder:text-on-surface-variant/40 outline-none" type="text" id="reg-name-input" placeholder="Juan Perez">
+        </div>
+      </div>
+      <div>
+        <label class="text-label-md font-medium text-on-surface-variant mb-1.5 block">Correo electronico</label>
+        <div class="flex items-center bg-white rounded-xl px-4 py-3 border border-outline-variant/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+          <span class="material-symbols-outlined text-outline mr-3 text-[20px]">mail</span>
+          <input class="flex-grow bg-transparent border-none focus:ring-0 text-body-lg text-on-surface placeholder:text-on-surface-variant/40 outline-none" type="email" id="reg-email-input" placeholder="ejemplo@correo.cl" autocomplete="email">
+        </div>
+      </div>
+      <div>
+        <label class="text-label-md font-medium text-on-surface-variant mb-1.5 block">Contrasena</label>
+        <div class="flex items-center bg-white rounded-xl px-4 py-3 border border-outline-variant/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+          <span class="material-symbols-outlined text-outline mr-3 text-[20px]">lock</span>
+          <input class="flex-grow bg-transparent border-none focus:ring-0 text-body-lg text-on-surface placeholder:text-on-surface-variant/40 outline-none" type="password" id="reg-password-input" placeholder="Minimo 6 caracteres" autocomplete="new-password">
+        </div>
+      </div>
+      <button class="w-full bg-primary text-on-primary font-bold py-3.5 rounded-xl text-body-lg hover:bg-primary/90 transition-all shadow-md active:scale-[0.98] mt-2" onclick="handleRegister()" id="register-btn">
+        Crear Cuenta
+      </button>
+      <p class="text-body-md text-on-surface-variant text-center mt-1">
+        Ya tienes cuenta? <a class="text-primary font-semibold hover:underline cursor-pointer" onclick="showLogin()">Inicia sesion</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- App Container -->
+<div id="app-container">
+<!-- TopAppBar -->
+<header class="bg-primary-container fixed top-0 w-full z-40 flex justify-between items-center h-16 px-margin-mobile md:px-gutter shadow-md">
+<div class="flex items-center gap-4">
+<button class="text-on-primary hover:bg-white/10 p-2 rounded-full transition-transform active:scale-95" onclick="toggleSidebar()">
+<span class="material-symbols-outlined text-[32px]">menu</span>
+</button>
+<h1 class="text-headline-md font-headline-md font-bold text-on-primary">ChatBot</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="hidden md:block text-headline-sm font-headline-sm font-bold text-on-primary">Banco Estado</span>
+<div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1 overflow-hidden">
+<img alt="Logo BancoEstado" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaBCCnoPQouO0sN1YEQkvlXS7gTEMWsMAD-NkMwLYiDrKPSP3QNz-hQTgpxppnUMHPcIOxTKOeT8yLiNVIqI02p2o2owwTkeba9pdA4SvXSKQ56-shJnCqUwkF4Lg9ixAWF-ZGccKc4WrvfuAnMNN3Tf0lzFLr7HthpKXcETlIJ4FdWX1Bo35xz7mDHN51oHpVTThlQUSQoGGxhdeTAB-N6N05enT824xAXZZjFEVFJ3cgpeXTiIJfwjzW2tPl_yEcu3gE1HaZlHc">
+</div>
+<button class="text-on-primary p-2" onclick="openLogin()">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 w-[280px] h-full z-40 flex flex-col bg-surface-container-low shadow-2xl sidebar-transition -translate-x-full pt-16" id="sidebar">
+<div class="p-6">
+<div class="flex flex-col gap-1 mb-8">
+<h2 class="text-headline-sm font-headline-sm font-bold text-primary">Hola, Juan Perez</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">En que puedo ayudarte?</p>
+</div>
+<button class="w-full bg-primary text-on-primary font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 mb-8 hover:bg-primary/90 transition-colors shadow-sm" onclick="newChat()">
+<span class="material-symbols-outlined">add_comment</span>
+                Iniciar Nuevo Chat
+            </button>
+<nav class="space-y-1" id="history-nav">
+<div class="text-label-md font-label-md text-on-surface-variant/60 uppercase tracking-widest px-4 mb-3">Historial de Consultas</div>
+<div class="pt-4 mt-4 border-t border-outline-variant/30">
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+                        Mis Cuentas
+                    </a>
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+                        Soporte
+                    </a>
+</div>
+</nav>
+</div>
+<div class="mt-auto p-4 border-t border-outline-variant/30">
+<button class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors w-full rounded-lg" onclick="logout()">
+<span class="material-symbols-outlined">logout</span>
+                Cerrar Sesion
+            </button>
+</div>
+</aside>
+<!-- Overlay for Sidebar -->
+<div class="fixed inset-0 bg-black/40 z-30 hidden opacity-0 transition-opacity" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+<!-- Main Content -->
+<main class="relative flex flex-col items-center min-h-screen pt-16 pb-36">
+<!-- Chat Messages -->
+<div class="w-full max-w-[800px] flex-1 overflow-y-auto px-4 py-6 space-y-4" id="chat-messages">
+  <!-- Welcome -->
+  <div class="flex flex-col items-center text-center py-8" id="welcome-section">
+    <div class="relative flex flex-col items-center mb-3">
+      <div class="absolute -top-24 left-1/2 -translate-x-1/2 md:left-full md:-translate-x-10 md:top-0 w-64 p-5 bg-white rounded-2xl shadow-xl border border-outline-variant/20 text-left z-10">
+        <p class="text-body-lg font-bold text-primary mb-1" id="greeting-bubble">Hola, Juan Perez!</p>
+        <p class="text-body-md text-on-surface-variant">En que puedo ayudarte hoy?</p>
+        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 md:left-0 md:-left-2 md:top-1/2 md:-translate-y-1/2 w-4 h-4 bg-white border-b border-l border-outline-variant/20 rotate-45 md:-rotate-45"></div>
+      </div>
+      <div class="floating-anim relative w-48 h-48 md:w-72 md:h-72">
+        <img alt="Asistente Virtual" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3JnTSxU3qagzTbEqeQpRnKwT5r2JjODuvITqGcD1G-0LC55hNZZ51X9aFyhkMd1GSSfWHBwX6b6duOTmUg1XsF3K2FoRGYPgM_QKka39DUMj3IOhFbfRpnNxs7RTT83Nfk_qReEiW7rX1kqJKPpvepD0Y5IXtZT_aOIVN9hhkNK0oM94gAI5zPCtbxzLamr8u2k0mGZAsQQ9IES-D4gps5J648jEU5XG8NM2zJYg7Q6BJnWT9Zfy7YQX6_zRC9xKWYiNPJFfSyo0">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Input Section (fixed bottom) -->
+<div class="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm pb-4 pt-2 px-4 md:px-gutter" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
+<div class="w-full max-w-[640px] mx-auto relative group">
+<div class="flex items-center bg-white rounded-full px-6 py-4 chat-input-shadow border border-outline-variant/30 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-300">
+<span class="material-symbols-outlined text-primary mr-4" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<input class="flex-grow bg-transparent border-none focus:ring-0 text-body-lg text-on-surface placeholder:text-on-surface-variant/50 outline-none" placeholder="Escribe aca tu consulta..." type="text" id="chat-input">
+<button class="bg-primary text-on-primary w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-90 hover:scale-105 hover:shadow-lg ml-2" onclick="sendMessage()" id="send-btn">
+<span class="material-symbols-outlined text-[24px]">send</span>
+</button>
+</div>
+<!-- Quick Action Chips -->
+<div class="flex flex-wrap justify-center gap-2 mt-2">
+<button class="px-4 py-2 rounded-full border border-primary text-primary text-body-md font-semibold hover:bg-primary hover:text-on-primary transition-all shadow-sm active:scale-95 text-sm" onclick="quickMessage('Como puedo sacar la CuentaRUT?')">Como sacar la CuentaRUT</button>
+<button class="px-4 py-2 rounded-full border border-primary text-primary text-body-md font-semibold hover:bg-primary hover:text-on-primary transition-all shadow-sm active:scale-95 text-sm" onclick="quickMessage('Que hago si pierdo mi plastico?')">Que hago si pierdo mi plastico?</button>
+<button class="px-4 py-2 rounded-full border border-primary text-primary text-body-md font-semibold hover:bg-primary hover:text-on-primary transition-all shadow-sm active:scale-95 text-sm" onclick="quickMessage('Que condiciones debo cumplir para sacar una tarjeta de credito?')">Que condiciones debo cumplir para sacar una tarjeta de credito?</button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 bg-surface shadow-[0_-4px_16px_rgba(0,0,0,0.05)] border-t border-outline-variant/30">
+<a class="flex flex-col items-center justify-center text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="text-label-md font-bold">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-label-md font-medium">Historial</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-label-md font-medium">Perfil</span>
+</a>
+</nav>
+<script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const isHidden = sidebar.classList.contains('-translate-x-full');
+            
+            if (isHidden) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.add('opacity-100'), 10);
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.remove('opacity-100');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        // --- Users ---
+        function getUsers() {
+            return JSON.parse(localStorage.getItem('chatUsers') || '[]');
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('chatUsers', JSON.stringify(users));
+        }
+
+        function openLogin() {
+            document.getElementById('register-modal-overlay').classList.add('hidden');
+            document.getElementById('register-modal-overlay').classList.remove('flex');
+            document.getElementById('login-modal-overlay').classList.remove('hidden');
+            document.getElementById('login-modal-overlay').classList.add('flex');
+            document.getElementById('email-input').focus();
+            document.getElementById('login-error').classList.add('hidden');
+            document.getElementById('email-input').value = '';
+            document.getElementById('password-input').value = '';
+        }
+
+        function closeLogin() {
+            document.getElementById('login-modal-overlay').classList.add('hidden');
+            document.getElementById('login-modal-overlay').classList.remove('flex');
+            document.getElementById('login-error').classList.add('hidden');
+            document.getElementById('email-input').value = '';
+            document.getElementById('password-input').value = '';
+        }
+
+        function showLoginError(msg) {
+            const err = document.getElementById('login-error');
+            err.textContent = msg;
+            err.classList.remove('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('login-modal-overlay').classList.add('hidden');
+            document.getElementById('login-modal-overlay').classList.remove('flex');
+            document.getElementById('register-modal-overlay').classList.remove('hidden');
+            document.getElementById('register-modal-overlay').classList.add('flex');
+            document.getElementById('reg-name-input').focus();
+            document.getElementById('register-error').classList.add('hidden');
+        }
+
+        function closeRegister() {
+            document.getElementById('register-modal-overlay').classList.add('hidden');
+            document.getElementById('register-modal-overlay').classList.remove('flex');
+            document.getElementById('register-error').classList.add('hidden');
+            document.getElementById('reg-name-input').value = '';
+            document.getElementById('reg-email-input').value = '';
+            document.getElementById('reg-password-input').value = '';
+        }
+
+        function handleRegister() {
+            const name = document.getElementById('reg-name-input').value.trim();
+            const email = document.getElementById('reg-email-input').value.trim();
+            const password = document.getElementById('reg-password-input').value.trim();
+            const err = document.getElementById('register-error');
+            err.classList.add('hidden');
+
+            if (!name || !email || !password) {
+                err.textContent = 'Completa todos los campos.';
+                err.classList.remove('hidden');
+                return;
+            }
+            if (!email.includes('@') || !email.includes('.')) {
+                err.textContent = 'Ingresa un correo electronico vlido.';
+                err.classList.remove('hidden');
+                return;
+            }
+            if (password.length < 6) {
+                err.textContent = 'La contrasena debe tener al menos 6 caracteres.';
+                err.classList.remove('hidden');
+                return;
+            }
+
+            const users = getUsers();
+            if (users.find(u => u.email === email)) {
+                err.textContent = 'Este correo ya est registrado.';
+                err.classList.remove('hidden');
+                return;
+            }
+
+            users.push({ name, email, password });
+            saveUsers(users);
+
+            // Auto-login
+            document.querySelector('#sidebar h2').textContent = 'Hola, ' + name + '!';
+            document.getElementById('greeting-bubble').textContent = 'Hola, ' + name + '!';
+            closeRegister();
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('email-input').value.trim();
+            const password = document.getElementById('password-input').value.trim();
+            const err = document.getElementById('login-error');
+            err.classList.add('hidden');
+
+            if (!email || !password) {
+                showLoginError('Por favor ingresa tu correo electronico y contrasena.');
+                document.getElementById(!email ? 'email-input' : 'password-input').focus();
+                return;
+            }
+
+            const users = getUsers();
+            const user = users.find(u => u.email === email && u.password === password);
+
+            if (!user) {
+                showLoginError('Correo electronico o contrasena incorrectos.');
+                return;
+            }
+
+            document.querySelector('#sidebar h2').textContent = 'Hola, ' + user.name + '!';
+            document.getElementById('greeting-bubble').textContent = 'Hola, ' + user.name + '!';
+            closeLogin();
+        }
+
+        // --- Chat History ---
+        let chatSessions = JSON.parse(localStorage.getItem('chatSessions') || '[]');
+        let currentSessionId = localStorage.getItem('currentSessionId') || null;
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        }
+
+        function formatTime(ts) {
+            const d = new Date(ts);
+            return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' }) + ', ' +
+                d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function getSession(id) {
+            return chatSessions.find(s => s.id === id);
+        }
+
+        function saveSessions() {
+            localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
+            if (currentSessionId) localStorage.setItem('currentSessionId', currentSessionId);
+        }
+
+        function ensureCurrentSession() {
+            if (!currentSessionId || !getSession(currentSessionId)) {
+                const s = { id: generateId(), title: 'Nuevo Chat', timestamp: Date.now(), messages: [] };
+                chatSessions.push(s);
+                currentSessionId = s.id;
+                saveSessions();
+            }
+        }
+
+        function renderHistory() {
+            const nav = document.getElementById('history-nav');
+            // Remove old entries (keep the label)
+            nav.querySelectorAll('.history-entry').forEach(el => el.remove());
+
+            // Show in reverse chronological order
+            const sorted = [...chatSessions].sort((a, b) => b.timestamp - a.timestamp);
+            sorted.forEach(s => {
+                const isActive = s.id === currentSessionId;
+                const a = document.createElement('a');
+                a.className = 'history-entry flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ' +
+                    (isActive ? 'bg-primary-fixed text-on-primary-fixed-variant font-bold border-l-4 border-primary rounded-r-lg' : 'text-on-surface-variant hover:bg-surface-container-high');
+                a.href = '#';
+                a.onclick = (e) => { e.preventDefault(); loadSession(s.id); };
+                a.innerHTML = '<span class="material-symbols-outlined">history</span>' +
+                    '<div class="flex flex-col"><span class="text-body-md truncate max-w-[180px]">' + s.title + '</span>' +
+                    '<span class="text-xs font-normal opacity-70">' + formatTime(s.timestamp) + '</span></div>';
+                nav.appendChild(a);
+            });
+
+            // If no sessions, show a placeholder
+            if (chatSessions.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'history-entry text-body-md text-on-surface-variant/50 text-center py-4';
+                empty.textContent = 'Sin consultas aun';
+                nav.appendChild(empty);
+            }
+        }
+
+        function newChat() {
+            // Save current session if it has messages
+            const current = getSession(currentSessionId);
+            if (current && current.messages.length > 0) {
+                current.title = current.messages[0].text.length > 30
+                    ? current.messages[0].text.slice(0, 30) + '...'
+                    : current.messages[0].text;
+                current.timestamp = Date.now();
+            }
+
+            // Create new session
+            const s = { id: generateId(), title: 'Nuevo Chat', timestamp: Date.now(), messages: [] };
+            chatSessions.push(s);
+            currentSessionId = s.id;
+            saveSessions();
+            renderHistory();
+
+            // Clear chat UI
+            document.getElementById('chat-messages').innerHTML =
+                '<div class="flex flex-col items-center text-center py-8" id="welcome-section">' +
+                '  <div class="relative flex flex-col items-center mb-3">' +
+                '    <div class="absolute -top-24 left-1/2 -translate-x-1/2 md:left-full md:-translate-x-10 md:top-0 w-64 p-5 bg-white rounded-2xl shadow-xl border border-outline-variant/20 text-left z-10">' +
+                '      <p class="text-body-lg font-bold text-primary mb-1" id="greeting-bubble">Hola, ' + document.querySelector('#sidebar h2').textContent.replace('Hola, ', '').replace('!', '') + '!</p>' +
+                '      <p class="text-body-md text-on-surface-variant">En que puedo ayudarte hoy?</p>' +
+                '      <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 md:left-0 md:-left-2 md:top-1/2 md:-translate-y-1/2 w-4 h-4 bg-white border-b border-l border-outline-variant/20 rotate-45 md:-rotate-45"></div>' +
+                '    </div>' +
+                '    <div class="floating-anim relative w-48 h-48 md:w-72 md:h-72">' +
+                '      <img alt="Asistente Virtual" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3JnTSxU3qagzTbEqeQpRnKwT5r2JjODuvITqGcD1G-0LC55hNZZ51X9aFyhkMd1GSSfWHBwX6b6duOTmUg1XsF3K2FoRGYPgM_QKka39DUMj3IOhFbfRpnNxs7RTT83Nfk_qReEiW7rX1kqJKPpvepD0Y5IXtZT_aOIVN9hhkNK0oM94gAI5zPCtbxzLamr8u2k0mGZAsQQ9IES-D4gps5J648jEU5XG8NM2zJYg7Q6BJnWT9Zfy7YQX6_zRC9xKWYiNPJFfSyo0">' +
+                '    </div>' +
+                '  </div>' +
+                '</div>';
+
+            // Close sidebar on mobile
+            toggleSidebar();
+        }
+
+        function loadSession(id) {
+            const session = getSession(id);
+            if (!session) return;
+            currentSessionId = id;
+            saveSessions();
+            renderHistory();
+
+            // Restore messages
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+
+            if (session.messages.length === 0) {
+                newChat();
+                return;
+            }
+
+            session.messages.forEach(m => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'flex ' + (m.isUser ? 'justify-end' : 'justify-start') + ' animate-in fade-in duration-200';
+                const bubble = document.createElement('div');
+                bubble.className = 'max-w-[75%] px-4 py-3 rounded-2xl text-body-md ' +
+                    (m.isUser ? 'bg-primary text-on-primary rounded-br-md' : 'bg-surface-container-high text-on-surface rounded-bl-md');
+                bubble.innerHTML = m.text.replace(/\n/g, '<br>');
+                msgDiv.appendChild(bubble);
+                container.appendChild(msgDiv);
+            });
+            container.scrollTop = container.scrollHeight;
+
+            // Close sidebar
+            toggleSidebar();
+        }
+
+        function openLogout() {
+            document.getElementById('logout-modal-overlay').classList.remove('hidden');
+            document.getElementById('logout-modal-overlay').classList.add('flex');
+        }
+
+        function closeLogout() {
+            document.getElementById('logout-modal-overlay').classList.add('hidden');
+            document.getElementById('logout-modal-overlay').classList.remove('flex');
+        }
+
+        function confirmLogout() {
+            document.querySelector('#sidebar h2').textContent = 'Hola, Visitante';
+
+            var container = document.getElementById('chat-messages');
+            container.innerHTML = '<div class="flex flex-col items-center text-center py-8" id="welcome-section">' +
+                '  <div class="relative flex flex-col items-center mb-3">' +
+                '    <div class="absolute -top-24 left-1/2 -translate-x-1/2 md:left-full md:-translate-x-10 md:top-0 w-64 p-5 bg-white rounded-2xl shadow-xl border border-outline-variant/20 text-left z-10">' +
+                '      <p class="text-body-lg font-bold text-primary mb-1" id="greeting-bubble">Hola! En que puedo ayudarte?</p>' +
+                '      <p class="text-body-md text-on-surface-variant">En que puedo ayudarte hoy?</p>' +
+                '      <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 md:left-0 md:-left-2 md:top-1/2 md:-translate-y-1/2 w-4 h-4 bg-white border-b border-l border-outline-variant/20 rotate-45 md:-rotate-45"></div>' +
+                '    </div>' +
+                '    <div class="floating-anim relative w-48 h-48 md:w-72 md:h-72">' +
+                '      <img alt="Asistente Virtual" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3JnTSxU3qagzTbEqeQpRnKwT5r2JjODuvITqGcD1G-0LC55hNZZ51X9aFyhkMd1GSSfWHBwX6b6duOTmUg1XsF3K2FoRGYPgM_QKka39DUMj3IOhFbfRpnNxs7RTT83Nfk_qReEiW7rX1kqJKPpvepD0Y5IXtZT_aOIVN9hhkNK0oM94gAI5zPCtbxzLamr8u2k0mGZAsQQ9IES-D4gps5J648jEU5XG8NM2zJYg7Q6BJnWT9Zfy7YQX6_zRC9xKWYiNPJFfSyo0">' +
+                '    </div>' +
+                '  </div>' +
+                '</div>';
+
+            const current = getSession(currentSessionId);
+            if (current && current.messages.length > 0) {
+                current.title = current.messages[0].text.length > 30
+                    ? current.messages[0].text.slice(0, 30) + '...'
+                    : current.messages[0].text;
+                current.timestamp = Date.now();
+                saveSessions();
+            }
+            closeLogout();
+        }
+        function logout() {
+            openLogout();
+        }
+
+        // --- Bot Responses ---
+        const botResponses = {
+            'cuentarut': 'Para sacar la CuentaRUT necesitas:\n\n1. Ser mayor de 18 anos\n2. Tener tu cedula de identidad vigente\n3. Acercarte a cualquier sucursal BancoEstado con tu cedula\n4. Tambien puedes solicitarla online en bancoestado.cl\n\nTe gustaria que te ayude con algun otro tramite?',
+            'plastico': 'Si pierdes tu plastico, sigue estos pasos:\n\n1. **Bloquea tu tarjeta** inmediatamente llamando al 600 200 7000\n2. Tambien puedes bloquearla desde la app BancoEstado\n3. Solicita un duplicado en tu sucursal mas cercana\n4. Mientras tanto, puedes usar tu CuentaRUT digital\n\nNecesitas ayuda con algo mas?',
+            'credito': 'Para solicitar una tarjeta de credito BancoEstado necesitas:\n\n1. Ser mayor de 18 anos\n2. Tener ingresos minimos de $300.000\n3. No tener deudas impagas en el sistema financiero\n4. Presentar tu cedula de identidad y tres ultimas liquidaciones de sueldo\n\nQuieres que te explique algun otro producto?',
+            'default': 'Gracias por tu consulta. Un ejecutivo BancoEstado se comunicara contigo para ayudarte. Mientras tanto, te puedo ayudar con algo mas?'
+        };
+
+        function getBotResponse(msg) {
+            const lower = msg.toLowerCase();
+            if (lower.includes('cuenta') || lower.includes('rut')) return botResponses['cuentarut'];
+            if (lower.includes('plastico') || lower.includes('pierdo') || lower.includes('perdi')) return botResponses['plastico'];
+            if (lower.includes('credito') || lower.includes('credito') || lower.includes('tarjeta')) return botResponses['credito'];
+            return botResponses['default'];
+        }
+
+        function addMessage(text, isUser) {
+            ensureCurrentSession();
+            const session = getSession(currentSessionId);
+
+            // Save to session
+            session.messages.push({ text, isUser, time: Date.now() });
+            if (!isUser) {
+                // Update title with first user message if still default
+                const firstUserMsg = session.messages.find(m => m.isUser);
+                if (firstUserMsg && session.title === 'Nuevo Chat') {
+                    session.title = firstUserMsg.text.length > 30
+                        ? firstUserMsg.text.slice(0, 30) + '...'
+                        : firstUserMsg.text;
+                }
+                session.timestamp = Date.now();
+            }
+            saveSessions();
+            renderHistory();
+
+            const container = document.getElementById('chat-messages');
+            const welcome = document.getElementById('welcome-section');
+            if (welcome) welcome.remove();
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'flex ' + (isUser ? 'justify-end' : 'justify-start') + ' animate-in fade-in slide-in-from-bottom-2 duration-300';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'max-w-[75%] px-4 py-3 rounded-2xl text-body-md ' +
+                (isUser
+                    ? 'bg-primary text-on-primary rounded-br-md'
+                    : 'bg-surface-container-high text-on-surface rounded-bl-md');
+            bubble.innerHTML = text.replace(/\n/g, '<br>');
+
+            msgDiv.appendChild(bubble);
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            addMessage(msg, true);
+            input.value = '';
+
+            const btn = document.getElementById('send-btn');
+            btn.style.transform = 'scale(0.9)';
+            setTimeout(() => btn.style.transform = '', 150);
+
+            setTimeout(() => addMessage(getBotResponse(msg), false), 600);
+        }
+
+        function quickMessage(msg) {
+            const input = document.getElementById('chat-input');
+            input.value = msg;
+            input.focus();
+        }
+
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (!document.getElementById('login-modal-overlay').classList.contains('hidden')) {
+                    handleLogin();
+                } else if (!document.getElementById('register-modal-overlay').classList.contains('hidden')) {
+                    handleRegister();
+                } else {
+                    sendMessage();
+                }
+            }
+        });
+
+        // Init: render history on load
+        renderHistory();
+        // If there's a current session with messages, load it
+        if (currentSessionId) {
+            const s = getSession(currentSessionId);
+            if (s && s.messages.length > 0) loadSession(currentSessionId);
+        }
+        ensureCurrentSession();
+    </script>
+
+</div><!-- end app-container -->
+</body></html>
+
+
+
+
+
+
+
