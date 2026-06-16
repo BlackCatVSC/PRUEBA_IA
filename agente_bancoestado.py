@@ -12,6 +12,8 @@ Ejecutar: python agente_bancoestado.py
 
 import os
 import json
+import unicodedata
+import re
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -302,9 +304,7 @@ def flujo_actualizar_saldo_interactivo() -> bool:
     print("  1) CuentaRUT")
     print("  2) Cuenta de Ahorros")
     opcion = input("  Opcion [1/2]: ").strip()
-    tipo_cuenta = "CuentaRUT" if opcion == "2" else "CuentaRUT"
-    if opcion == "2":
-        tipo_cuenta = "CuentaAhorros"
+    tipo_cuenta = "CuentaAhorros" if opcion == "2" else "CuentaRUT"
     print(f"  Cuenta seleccionada: {tipo_cuenta}")
 
     # Paso 2: monto
@@ -397,15 +397,15 @@ def procesar_consulta_modo_demo(consulta: str) -> str:
 
 def procesar_consulta_llm(consulta: str, memoria_tipo: str = "buffer") -> str:
     """Procesa consultas usando el LLM con el tipo de memoria especificado."""
-    # Si menciona beneficios/tarjetas, sugerir comando en vez de ir al LLM
-    palabras_beneficios = ["beneficio", "tarjeta", "tarjetas", "beneficios"]
-    if any(p in consulta.lower() for p in palabras_beneficios):
-        return ("Para ver los beneficios disponibles usa el comando /beneficios.\n"
-                "Con /verificar puedo revisar tu saldo y decirte cual tarjeta te corresponde.")
-
     plan = planificador.crear_plan(consulta)
     if plan.get("es_urgente", False):
         print(planificador.obtener_resumen_plan(plan))
+    else:
+        # Solo sugerir beneficios si NO hay urgencia (bloqueo/robo)
+        palabras_beneficios = ["beneficio", "beneficios"]
+        if any(p in consulta.lower() for p in palabras_beneficios):
+            return ("Para ver los beneficios disponibles usa el comando /beneficios.\n"
+                    "Con /verificar puedo revisar tu saldo y decirte cual tarjeta te corresponde.")
 
     executors = {
         "buffer": executor_buffer,
@@ -540,9 +540,11 @@ def loop_principal():
             activo = mostrar_pregunta_final()
             continue
 
-        # Detectar palabras clave de beneficios/tarjetas y sugerir comando
-        palabras_beneficios = ["beneficio", "tarjeta", "tarjetas", "beneficios"]
-        if any(p in consulta.lower() for p in palabras_beneficios) \
+        # Sugerir beneficios solo si NO es contexto de bloqueo/robo
+        palabras_bloqueo = ["perdi", "perdio", "robo", "robaron", "extravio", "bloquear", "bloqueo"]
+        consulta_norm = unicodedata.normalize('NFKD', consulta.lower()).encode('ascii', 'ignore').decode('ascii')
+        es_bloqueo = any(p in consulta_norm for p in palabras_bloqueo)
+        if not es_bloqueo and any(p in consulta_norm for p in ["beneficio", "beneficios", "tarjeta", "tarjetas"]) \
                 and "/beneficios" not in consulta and "/verificar" not in consulta:
             print("\n--- Sugerencia ---")
             print("  Usa /beneficios para ver todas las tarjetas disponibles")

@@ -10,6 +10,8 @@ Implementa estrategias de planificación y toma de decisiones:
 
 import json
 import inspect
+import unicodedata
+import re
 from datetime import datetime
 from typing import Callable
 
@@ -31,13 +33,13 @@ INTENCIONES = {
         "prioridad": 3,
     },
     "crear_cuenta": {
-        "palabras": ["crear cuenta", "abrir cuenta", "nueva cuenta", "quiero una cuenta"],
+        "palabras": ["crear cuenta", "crea una cuenta", "crea cuenta", "abrir cuenta", "abrir una cuenta", "abre una cuenta", "nueva cuenta", "quiero una cuenta", "quisiera una cuenta", "necesito una cuenta", "quiero abrir", "quiero crear"],
         "herramientas_requeridas": ["crear_cuenta_rut", "crear_cuenta_ahorros"],
         "criticidad": "media",
         "prioridad": 4,
     },
     "bloquear_tarjeta": {
-        "palabras": ["bloquear tarjeta", "perdi", "perdio", "robo", "me robaron", "extravio", "tarjeta bloqueada", "robaron", "bloquearla"],
+        "palabras": ["bloquear tarjeta", "bloquea", "bloquearla", "perdi", "perdio", "perdida", "perdido", "robo", "me robaron", "extravio", "tarjeta bloqueada", "robaron", "robo de tarjeta", "hurto", "susto"],
         "herramientas_requeridas": ["bloquear_tarjeta"],
         "criticidad": "alta",
         "prioridad": 1,
@@ -55,7 +57,7 @@ INTENCIONES = {
         "prioridad": 4,
     },
     "solicitar_credito": {
-        "palabras": ["solicitar credito", "pedir prestado", "solicitar prestamo", "necesito plata", "necesito dinero"],
+        "palabras": ["solicitar credito", "pedir prestado", "solicitar prestamo", "necesito plata", "necesito dinero", "necesito un prestamo", "necesito un credito"],
         "herramientas_requeridas": ["simular_credito", "solicitar_credito"],
         "criticidad": "alta",
         "prioridad": 2,
@@ -114,19 +116,29 @@ class Planificador:
     def __init__(self):
         self.historial_acciones = []
 
+    @staticmethod
+    def _normalizar_texto(texto: str) -> str:
+        """Elimina acentos/tildes y pasa a minúsculas para matching."""
+        texto = texto.lower()
+        texto = unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('ascii')
+        return texto
+
     def clasificar(self, consulta: str) -> list:
         """Clasifica una consulta en intenciones detectadas, ordenadas por criticidad."""
-        consulta_lower = consulta.lower()
+        consulta_norm = self._normalizar_texto(consulta)
         detectadas = []
 
         for intencion, config in INTENCIONES.items():
-            if any(p in consulta_lower for p in config["palabras"]):
-                detectadas.append({
-                    "intencion": intencion,
-                    "criticidad": config["criticidad"],
-                    "prioridad": config["prioridad"],
-                    "herramientas": config["herramientas_requeridas"],
-                })
+            for palabra in config["palabras"]:
+                palabra_norm = self._normalizar_texto(palabra)
+                if palabra_norm in consulta_norm:
+                    detectadas.append({
+                        "intencion": intencion,
+                        "criticidad": config["criticidad"],
+                        "prioridad": config["prioridad"],
+                        "herramientas": config["herramientas_requeridas"],
+                    })
+                    break
 
         # Ordenar por criticidad (alta > media > baja) y luego por prioridad
         orden_criticidad = {"alta": 0, "media": 1, "baja": 2}
@@ -153,8 +165,17 @@ class Planificador:
         herramientas_usadas = set()
         es_urgente = any(i["criticidad"] == "alta" for i in intenciones)
 
+        consulta_norm = self._normalizar_texto(consulta) if intenciones else ""
+
         for idx, intento in enumerate(intenciones):
-            for herramienta in intento["herramientas"]:
+            herramientas = intento["herramientas"]
+            # Para "crear_cuenta", elegir segun contexto en vez de ejecutar ambas
+            if intento["intencion"] == "crear_cuenta":
+                if "ahorro" in consulta_norm:
+                    herramientas = [h for h in herramientas if "ahorro" in h]
+                else:
+                    herramientas = [h for h in herramientas if "ahorro" not in h]
+            for herramienta in herramientas:
                 if herramienta not in herramientas_usadas:
                     pasos.append({
                         "orden": len(pasos) + 1,
@@ -261,13 +282,34 @@ class Orquestador:
             elif name == "plazo_meses":
                 args[name] = 24
             elif name == "numero_tarjeta":
-                args[name] = "4532-7890-1234-5678"
+                consulta_lower = consulta.lower()
+                tipo_cuenta = "CuentaAhorros" if "ahorro" in consulta_lower else "CuentaRUT"
+                try:
+                    from herramientas_bancoestado import api as api_bee
+                    card_data = json.loads(api_bee.buscar_tarjeta_por_cuenta("12.345.678-9", tipo_cuenta))
+                    if card_data.get("success"):
+                        args[name] = card_data["numero"]
+                    else:
+                        args[name] = "4532-7890-1234-5678"
+                except Exception:
+                    args[name] = "4532-7890-1234-5678"
             elif name == "tipo_cuenta_origen":
-                args[name] = "CuentaRUT"
+                consulta_lower = consulta.lower()
+                if "ahorro" in consulta_lower and ("desde" in consulta_lower or "de" in consulta_lower):
+                    args[name] = "CuentaAhorros"
+                else:
+                    args[name] = "CuentaRUT"
             elif name == "rut_destino":
-                args[name] = "12.345.678-9"
+                match_rut = re.search(r'\b(\d{1,2}\.?\d{3}\.?\d{3}[-]?[\dkK])\b', consulta)
+                args[name] = match_rut.group(1) if match_rut else "12.345.678-9"
             elif name == "tipo_cuenta_destino":
-                args[name] = "CuentaAhorros"
+                consulta_lower = consulta.lower()
+                if "ahorro" in consulta_lower and ("a " in consulta_lower or "para" in consulta_lower or "destino" in consulta_lower):
+                    args[name] = "CuentaAhorros"
+                elif "rut" in consulta_lower and ("a " in consulta_lower or "para" in consulta_lower or "destino" in consulta_lower):
+                    args[name] = "CuentaRUT"
+                else:
+                    args[name] = "CuentaAhorros"
             elif name == "monto_mensual":
                 args[name] = 50000
             elif name == "tipo_cuenta":
@@ -277,17 +319,19 @@ class Orquestador:
                 else:
                     args[name] = "CuentaRUT"
 
-        # Extraer montos desde la consulta (ej: "150 millones", "5000000")
-        patron_monto = r'(\d[\d.]*)\s*(millones|mil)\b'
-        coincidencia = re.search(patron_monto, consulta.lower())
+        # Extraer montos desde la consulta (ej: "150 millones", "$500.000", "5000000")
+        consulta_num = consulta.lower().replace('$', '').replace(',', '').strip()
+        patron_monto = r'(\d+(?:\.\d+)?)\s*(millones|mil)\b'
+        coincidencia = re.search(patron_monto, consulta_num)
         if coincidencia:
-            num = float(coincidencia.group(1).replace(".", ""))
+            num = float(coincidencia.group(1))
             if coincidencia.group(2) == "millones":
                 args["monto"] = int(num * 1_000_000)
             elif coincidencia.group(2) == "mil":
                 args["monto"] = int(num * 1_000)
         else:
-            numeros = re.findall(r'\b(\d{4,})\b', consulta)
+            consulta_limpia = re.sub(r'(\d)\.(\d{3})', r'\1\2', consulta_num)
+            numeros = re.findall(r'\b(\d{4,})\b', consulta_limpia)
             if numeros:
                 args["monto"] = int(max(float(n) for n in numeros))
 

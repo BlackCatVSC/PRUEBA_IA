@@ -234,6 +234,14 @@ class BancoEstadoAPI:
                 }, indent=2, ensure_ascii=False)
         return json.dumps({"success": False, "error": "Número de tarjeta no encontrado"}, ensure_ascii=False)
 
+    def buscar_tarjeta_por_cuenta(self, rut: str, tipo_cuenta: str) -> str:
+        """Retorna el número de tarjeta asociado a un tipo de cuenta (CuentaRUT o CuentaAhorros)."""
+        cliente = self._get_cliente(rut)
+        for tarjeta in cliente["tarjetas"]:
+            if tarjeta["asociada_a"] == tipo_cuenta:
+                return json.dumps({"success": True, "numero": tarjeta["numero"], "tipo": tarjeta["tipo"]}, ensure_ascii=False)
+        return json.dumps({"success": False, "error": f"No se encontró tarjeta asociada a {tipo_cuenta}"}, ensure_ascii=False)
+
     def simular_credito(self, rut: str, monto: float, plazo_meses: int) -> str:
         """Simula un crédito y calcula cuotas, intereses y costo total."""
         if plazo_meses not in [12, 24, 36, 48]:
