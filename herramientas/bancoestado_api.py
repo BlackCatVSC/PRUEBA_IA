@@ -11,17 +11,40 @@ Arquitectura:
 """
 
 import json
+import os
 import random
 from datetime import datetime, timedelta
 from typing import Optional
+
+MEMORIA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "memoria")
+MEMORIA_ARCHIVO = os.path.join(MEMORIA_DIR, "datos_clientes.json")
 
 
 class BancoEstadoAPI:
     """Simulación del backend bancario de BancoEstado."""
 
-    def __init__(self):
+    def __init__(self, rut: str = "12.345.678-9"):
+        self.rut = rut
         self._clientes = {}
+        self._cargar_o_inicializar()
+
+    def _cargar_o_inicializar(self):
+        """Carga datos desde JSON si existe, sino inicializa datos de prueba."""
+        if os.path.exists(MEMORIA_ARCHIVO):
+            try:
+                with open(MEMORIA_ARCHIVO, "r", encoding="utf-8") as f:
+                    self._clientes = json.load(f)
+                return
+            except (json.JSONDecodeError, Exception):
+                pass
         self._init_datos()
+        self._guardar()
+
+    def _guardar(self):
+        """Persiste el estado actual en JSON."""
+        os.makedirs(MEMORIA_DIR, exist_ok=True)
+        with open(MEMORIA_ARCHIVO, "w", encoding="utf-8") as f:
+            json.dump(self._clientes, f, indent=2, ensure_ascii=False)
 
     def _init_datos(self):
         """Inicializa datos de prueba realistas."""
@@ -110,6 +133,46 @@ class BancoEstadoAPI:
             ],
         }
 
+    def crear_cuenta_para_nuevo_usuario(self, rut: str, nombre: str, email: str):
+        """Crea un nuevo cliente con CuentaRUT y CuentaAhorros en $0."""
+        if rut in self._clientes:
+            return
+        hoy = datetime.now()
+        self._clientes[rut] = {
+            "datos": {
+                "rut": rut,
+                "nombre": nombre,
+                "email": email,
+                "telefono": "",
+                "direccion": "",
+                "fecha_ingreso": hoy.isoformat(),
+            },
+            "cuentas": {
+                "CuentaRUT": {
+                    "tipo": "CuentaRUT",
+                    "numero": str(random.randint(100_000_000, 999_999_999)),
+                    "saldo": 0,
+                    "disponible": 0,
+                    "bloqueada": False,
+                    "fecha_creacion": hoy.isoformat(),
+                    "movimientos": [],
+                },
+                "CuentaAhorros": {
+                    "tipo": "Cuenta de Ahorros",
+                    "numero": str(random.randint(100_000_000, 999_999_999)),
+                    "saldo": 0,
+                    "disponible": 0,
+                    "bloqueada": False,
+                    "tasa_interes": 0.5,
+                    "fecha_creacion": hoy.isoformat(),
+                    "movimientos": [],
+                },
+            },
+            "tarjetas": [],
+            "creditos": [],
+        }
+        self._guardar()
+
     def _get_cliente(self, rut: str) -> tuple:
         cliente = self._clientes.get(rut)
         if not cliente:
@@ -177,6 +240,7 @@ class BancoEstadoAPI:
             "fecha_creacion": datetime.now().isoformat(),
             "movimientos": [],
         }
+        self._guardar()
         return json.dumps({
             "success": True,
             "mensaje": "CuentaRUT creada exitosamente",
@@ -187,6 +251,8 @@ class BancoEstadoAPI:
     def crear_cuenta_ahorros(self, rut: str, deposito_inicial: float = 0) -> str:
         """Crea una nueva Cuenta de Ahorros."""
         cliente = self._get_cliente(rut)
+        if "CuentaAhorros" in cliente["cuentas"]:
+            return json.dumps({"success": False, "error": "El cliente ya posee una Cuenta de Ahorros"}, ensure_ascii=False)
         numero = str(random.randint(100_000_000, 999_999_999))
         cliente["cuentas"]["CuentaAhorros"] = {
             "tipo": "Cuenta de Ahorros",
@@ -198,6 +264,7 @@ class BancoEstadoAPI:
             "fecha_creacion": datetime.now().isoformat(),
             "movimientos": [],
         }
+        self._guardar()
         return json.dumps({
             "success": True,
             "mensaje": "Cuenta de Ahorros creada exitosamente",
@@ -213,6 +280,7 @@ class BancoEstadoAPI:
         for tarjeta in cliente["tarjetas"]:
             if tarjeta["numero"] == numero_tarjeta:
                 tarjeta["estado"] = "bloqueada"
+                self._guardar()
                 return json.dumps({
                     "success": True,
                     "mensaje": f"Tarjeta {numero_tarjeta[-4:]} bloqueada exitosamente",
@@ -228,6 +296,7 @@ class BancoEstadoAPI:
         for tarjeta in cliente["tarjetas"]:
             if tarjeta["numero"] == numero_tarjeta:
                 tarjeta["estado"] = "activa"
+                self._guardar()
                 return json.dumps({
                     "success": True,
                     "mensaje": f"Tarjeta {numero_tarjeta[-4:]} desbloqueada exitosamente",
@@ -315,6 +384,7 @@ class BancoEstadoAPI:
             "total_cuotas": plazo_meses,
         }
         cliente["creditos"].append(credito)
+        self._guardar()
 
         return json.dumps({
             "success": True,
@@ -382,6 +452,24 @@ class BancoEstadoAPI:
         cuenta_destino["disponible"] += monto
         cuenta_destino["movimientos"].append({"fecha": ahora, "tipo": "Transferencia recibida", "monto": monto, "saldo_post": cuenta_destino["saldo"]})
 
+        self._guardar()
+
+        try:
+            from .email_sender import enviar_notificacion_transaccion
+            email_origen = cliente_origen["datos"].get("email")
+            email_destino = cliente_destino["datos"].get("email")
+            if email_origen:
+                enviar_notificacion_transaccion("transferencia", monto, tipo_cuenta_origen,
+                                                 cuenta_origen["saldo"],
+                                                 destino=email_origen,
+                                                 rut_origen=rut_origen, rut_destino=rut_destino)
+            if email_destino and email_destino != email_origen:
+                enviar_notificacion_transaccion("deposito", monto, tipo_cuenta_destino,
+                                                 cuenta_destino["saldo"],
+                                                 destino=email_destino)
+        except Exception as e:
+            print(f"[EMAIL] Error enviando notificacion de transferencia: {e}")
+
         return json.dumps({
             "success": True,
             "mensaje": "Transferencia realizada exitosamente",
@@ -442,6 +530,17 @@ class BancoEstadoAPI:
             "monto": monto,
             "saldo_post": cuenta["saldo"],
         })
+        self._guardar()
+
+        try:
+            from .email_sender import enviar_notificacion_transaccion
+            email = cliente["datos"].get("email")
+            if email:
+                enviar_notificacion_transaccion("deposito", monto, tipo_cuenta, cuenta["saldo"],
+                                                 destino=email)
+        except Exception as e:
+            print(f"[EMAIL] Error enviando notificacion de deposito: {e}")
+
         return json.dumps({
             "success": True,
             "mensaje": f"Saldo actualizado exitosamente. Nuevo saldo en {tipo_cuenta}: ${cuenta['saldo']:,}",

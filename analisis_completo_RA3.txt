@@ -1,0 +1,422 @@
+================================================================================
+ANÁLISIS COMPLETO DEL PROYECTO RA3 - SEGURIDAD PARA EL AGENTE
+================================================================================
+Fecha de análisis: 2026-06-19
+Total de archivos analizados: 17
+
+================================================================================
+1. ESTRUCTURA GENERAL DEL PROYECTO
+================================================================================
+
+RA3 (Experiencia de Aprendizaje 3) - Seguridad, Observabilidad y Ética
+para Agentes de IA.
+
+Árbol de directorios:
+│   README.md                    (20 líneas) - Introducción y guía general
+│
+├── IL3.1/  - Herramientas de Observabilidad y Métricas
+│   ├── README.md                (8 líneas)
+│   ├── presentacion.md          (220 líneas) - 9 slides
+│   ├── 1-observability_tools.py (150 líneas)
+│   └── 2-observability-practice.ipynb (895 líneas)
+│
+├── IL3.2/  - Análisis de Trazabilidad y Logs
+│   ├── README.md                (8 líneas)
+│   ├── presentacion.md          (274 líneas) - 10 slides
+│   ├── 1-traceability_analysis.py (172 líneas)
+│   └── 2-traceability-practice.ipynb (1124 líneas)
+│
+├── IL3.3/  - Seguridad y Ética en Agentes de IA
+│   ├── README.md                (8 líneas)
+│   ├── presentacion.md          (363 líneas) - 10 slides
+│   ├── 1-security_ethics.py     (219 líneas)
+│   └── 2-security-ethics-practice.ipynb (1370 líneas)
+│
+└── IL3.4/  - Escalabilidad y Sostenibilidad
+    ├── README.md                (8 líneas)
+    ├── presentacion.md          (379 líneas) - 10 slides
+    ├── 1-scalability_sustainability.py (204 líneas)
+    └── 2-scalability-practice.ipynb (1631 líneas)
+
+
+================================================================================
+2. ANÁLISIS POR MÓDULO
+================================================================================
+
+
+--------------------------------------------------------------------------------
+2.1. MÓDULO IL3.1 - HERRAMIENTAS DE OBSERVABILIDAD Y MÉTRICAS
+--------------------------------------------------------------------------------
+
+2.1.1. README.md
+- Propósito: Introducción al módulo de observabilidad.
+- Contenido: Explica que se aprenderá a agregar logs y métricas básicas
+  a agentes de IA para monitorear funcionamiento y desempeño.
+- Archivo principal referenciado: 1-observability_tools.py
+
+2.1.2. presentacion.md
+- 9 slides que cubren:
+  * Slide 1: Objetivos (logging básico, métricas de rendimiento, debugging)
+  * Slide 2: Importancia del monitoreo (problemas de "caja negra", beneficios)
+  * Slide 3: Implementación práctica con logging y time
+  * Slide 4: Tipos de métricas (performance, calidad, negocio)
+  * Slide 5: Stack tecnológico (Python logging, Prometheus, Grafana, 
+    OpenTelemetry, LangSmith, Jaeger)
+  * Slide 6: Mejores prácticas (logging estructurado con structlog, 
+    correlación con trace_id)
+  * Slide 7: Implementación en producción (config por ambiente, dashboards, alertas)
+  * Slide 8: Transición a IL3.2 (trazabilidad)
+  * Slide 9: Resumen ejecutivo
+
+2.1.3. 1-observability_tools.py
+- Clases principales:
+  * RegistroMetrica: Dataclass para una interacción individual (timestamp,
+    tiempo_respuesta_ms, tokens, éxito, modelo)
+  * RecolectorMetricas: Recolecta y resume métricas (total, promedios, 
+    tasa de errores)
+  * AgenteObservable: Wrapper que registra cada interacción
+- Funcionalidad:
+  * Logging estructurado con timestamps (formato %Y-%m-%d %H:%M:%S)
+  * Simulación de procesamiento con tiempos aleatorios (50-500ms)
+  * Tasa de error simulada del 15%
+  * Estimación de tokens basada en palabras
+  * Reporte JSON con estadísticas agregadas
+- Demo: 5 mensajes de prueba con reporte final
+
+2.1.4. 2-observability-practice.ipynb
+- Notebook práctico de 895 líneas con 6 secciones:
+  * Sección 0: Configuración de entorno (GITHUB_TOKEN)
+  * Sección 1: Sistema de Métricas (MetricaLlamada, RecolectorMetricas
+    con estimación de costos, percentiles P50/P95)
+  * Sección 2: Logging Estructurado (LoggerEstructurado con formato JSON,
+    trace_id para correlación, 5 niveles de logging)
+  * Sección 3: Agente Observable (integra métricas + logging con OpenAI,
+    consultas reales a modelos GPT)
+  * Sección 4: Dashboard (visualizaciones matplotlib: histograma de latencia,
+    uso de tokens, tasa éxito/error, costo acumulado)
+  * Sección 5: Alertas y Umbrales (SistemaAlertas con ReglaAlerta, 
+    evaluación contra umbrales: latencia P95 > 5s, error > 10%, etc.)
+  * Sección 6: Ejercicio práctico para el estudiante (10+ consultas)
+
+
+--------------------------------------------------------------------------------
+2.2. MÓDULO IL3.2 - ANÁLISIS DE TRAZABILIDAD Y LOGS
+--------------------------------------------------------------------------------
+
+2.2.1. README.md
+- Propósito: Registrar y analizar logs para entender comportamiento de agentes.
+- Archivo principal: 1-traceability_analysis.py
+
+2.2.2. presentacion.md
+- 10 slides que cubren:
+  * Slide 1: Objetivos (trazabilidad, análisis de logs, debugging, auditoría)
+  * Slide 2: Importancia del seguimiento (caja negra, accountability, compliance)
+  * Slide 3: Implementación básica (logging a archivo, persistencia)
+  * Slide 4: Componentes de tracing (trace_id UUID, context correlation, 
+    decision trail)
+  * Slide 5: Análisis de logs estructurados en JSON
+  * Slide 6: Herramientas (ELK, OpenTelemetry, Jaeger, LangSmith, W&B, MLflow)
+  * Slide 7: Compliance y auditoría (GDPR, AI Act, SOX, HIPAA)
+  * Slide 8: Performance y escalabilidad (async logging, sampling, log rotation)
+  * Slide 9: Transición a IL3.3 (seguridad y ética)
+  * Slide 10: Resumen ejecutivo
+
+2.2.3. 1-traceability_analysis.py
+- Clases principales:
+  * Evento: Etapa individual con inicio, duración, estado y detalle
+  * Traza: Traza completa con trace_id, eventos y respuesta final
+  * AgenteTrazable: Genera trazas con 3 etapas (validación, clasificación,
+    generación) con fallos simulados del 10%
+  * AnalizadorTrazas: Resumen estadístico (promedio por etapa, tasa de éxito)
+- Funcionalidad:
+  * UUID para trace_id (12 caracteres)
+  * Simulación de 3 etapas con tiempos reales via time.sleep
+  * Clasificación de intención aleatoria (consulta, cálculo, resumen, traducción)
+  * Fallo simulado del 10% en generación
+  * Exportación a JSON
+  * Análisis de tiempos promedio por etapa
+- Demo: 6 mensajes de prueba + resumen del analizador
+
+2.2.4. 2-traceability-practice.ipynb
+- Notebook práctico de 1124 líneas con 6 secciones:
+  * Sección 0: Configuración de entorno
+  * Sección 1: Generación de Trazas (Span con inicio/fin/duración, 
+    SistemaTrazas con spans jerárquicos padre-hijo)
+  * Sección 2: Agente Trazable (5 etapas: validar_entrada, seleccionar_herramienta
+    con clasificación automática, llamada_api con sub-spans, formatear_salida)
+  * Sección 3: Visualización (cascada temporal tipo waterfall, árbol jerárquico)
+  * Sección 4: Análisis de Logs (AnalizadorLogs con duración promedio por etapa,
+    detección de anomalías por z-score, reporte completo)
+  * Sección 5: Detección de Patrones Problemáticos (errores recurrentes,
+    degradación de rendimiento, cuellos de botella)
+  * Sección 6: Ejercicio práctico
+- Conceptos avanzados: spans anidados, percentiles, z-score para anomalías
+
+
+--------------------------------------------------------------------------------
+2.3. MÓDULO IL3.3 - SEGURIDAD Y ÉTICA EN AGENTES DE IA
+--------------------------------------------------------------------------------
+
+2.3.1. README.md
+- Propósito: Validación de entradas, respuestas responsables, evitar acciones peligrosas.
+- Archivo principal: 1-security_ethics.py
+
+2.3.2. presentacion.md
+- 10 slides que cubren:
+  * Slide 1: Objetivos (validación, filtros éticos, protección contra ataques)
+  * Slide 2: Riesgos (inyección de código/prompt, exfiltración, sesgos, 
+    desinformación, privacidad)
+  * Slide 3: Validación de inputs y filtros éticos básicos
+  * Slide 4: Framework de protección (sanitización, validación de salida,
+    control de acceso, rate limiting)
+  * Slide 5: Ética en IA (beneficencia, no maleficencia, autonomía, justicia)
+  * Slide 6: Protección contra ataques (prompt injection, data exfiltration, 
+    rate limiting con ventana deslizante)
+  * Slide 7: Governance y compliance (EU AI Act, GDPR, CCPA, SOC 2)
+  * Slide 8: Monitoring y detección de anomalías
+  * Slide 9: Transición a IL3.4 (escalabilidad)
+  * Slide 10: Resumen ejecutivo
+
+2.3.3. 1-security_ethics.py
+- Funciones principales:
+  * evaluar_matematica_segura(): Evaluación matemática con AST (whitelist de 
+    nodos permitidos, previene code injection)
+  * detectar_pii(): Detecta correos, teléfonos chilenos (+56), RUT chileno,
+    tarjetas de crédito
+  * sanitizar_pii(): Reemplaza PII con marcadores [TIPO_REDACTADO]
+  * filtro_etico(): 3 categorías (violencia, contenido ilegal, manipulación)
+    con palabras clave en español
+  * sanitizar_entrada(): Límite de longitud, remueve caracteres de control,
+    bloquea patrones de inyección de prompts
+  * LimitadorTasa: Rate limiter con ventana deslizante (max peticiones/tiempo)
+- Demo: 5 demostraciones (eval segura, PII, filtro ético, rate limiting, sanitización)
+- PATRONES_PII: 4 tipos (correo, teléfono Chile, RUT Chile, tarjeta)
+- CATEGORIAS_RESTRINGIDAS: 3 categorías con listas de términos en español
+
+2.3.4. 2-security-ethics-practice.ipynb
+- Notebook práctico de 1370 líneas con 7 secciones:
+  * Sección 0: Configuración de entorno
+  * Sección 1: Guardrails de Entrada (ValidadorEntrada con detección de 
+    inyección ~20 patrones, PII local, validación de longitud, contenido
+    sospechoso como eval/exec/subprocess)
+  * Sección 2: Guardrails de Salida (ValidadorSalida con clasificación de
+    seguridad vía LLM, detección de PII en respuestas, validación de formato JSON)
+  * Sección 3: Detección de Sesgos (DetectorSesgos compara respuestas con
+    variaciones demográficas usando similitud coseno y puntuación de sesgo)
+  * Sección 4: Control de Alucinaciones (DetectorAlucinaciones verifica
+    fundamentación contra contexto usando LLM como juez)
+  * Sección 5: Human-in-the-Loop (SistemaConfianza con 3 umbrales: 
+    auto-responder, escalar a humano, rechazar)
+  * Sección 6: Rate Limiting y Protección (RateLimiter, GestorPresupuesto,
+    ProtectorSistema con degradación elegante según nivel de servicio)
+  * Sección 7: Agente Seguro (integra todas las capas: validación entrada
+    -> protección -> validación salida -> confianza)
+
+
+--------------------------------------------------------------------------------
+2.4. MÓDULO IL3.4 - ESCALABILIDAD Y SOSTENIBILIDAD
+--------------------------------------------------------------------------------
+
+2.4.1. README.md
+- Propósito: Recomendaciones para agentes escalables y sostenibles.
+- Archivo principal: 1-scalability_sustainability.py
+
+2.4.2. presentacion.md
+- 10 slides que cubren:
+  * Slide 1: Objetivos (escalabilidad horizontal, sostenibilidad, optimización)
+  * Slide 2: Desafíos (degradación, agotamiento de recursos, costos,
+    mantenimiento) y beneficios
+  * Slide 3: Fundamentos de escalabilidad (logging, microservicios, colas,
+    automatización, monitoreo)
+  * Slide 4: Escalabilidad horizontal vs vertical (containers, load balancing)
+  * Slide 5: Optimización de recursos (CPU async, memoria LRU cache, red)
+  * Slide 6: Arquitecturas escalables (microservicios, event-driven, CQRS)
+  * Slide 7: Sostenibilidad y Green Computing (carbon tracker, eficiencia)
+  * Slide 8: Automatización y DevOps (CI/CD, IaC con Terraform, auto-scaling)
+  * Slide 9: Monitoring y alerting para escalabilidad
+  * Slide 10: Proyecto final RA3 y resumen integrado
+
+2.4.3. 1-scalability_sustainability.py
+- Clases y funciones principales:
+  * CacheLLM: Cache basado en hash SHA256 con expulsión FIFO, estadísticas
+    de aciertos/fallos
+  * estimar_tokens(): ~1 token por cada 4 caracteres
+  * clasificar_complejidad(): 3 niveles (rápido, estándar, avanzado) según
+    tokens estimados y palabras clave
+  * seleccionar_modelo(): Mapea nivel a modelo (gpt-4o-mini, gpt-4o, o1)
+  * procesar_lote(): Procesa lote completo con cache y enrutamiento
+  * ResultadoLote: Dataclass con prompt, respuesta, modelo, tokens, cache, costo
+- MODELOS_DISPONIBLES: 3 configuraciones con costo, latencia y capacidad
+- Demo: 2 lotes (el segundo con consultas repetidas para demostrar cache)
+
+2.4.4. 2-scalability-practice.ipynb
+- Notebook práctico de 1631 líneas con 7 secciones:
+  * Sección 0: Configuración de entorno
+  * Sección 1: Cache Semántico (CacheSemantico con similitud coseno, TTL,
+    umbral de similitud configurable, normalización de texto, estadísticas)
+  * Sección 2: Procesamiento por Lotes (ProcesadorLotes con cola de prioridad
+    heap, 4 niveles: crítica, alta, normal, baja)
+  * Sección 3: Enrutamiento de Modelos (EnrutadorModelos clasifica por 
+    complejidad con regex, compara costo real vs hipotético GPT-4o)
+  * Sección 4: Estimación de Costos (CalculadorCostos con proyecciones diarias,
+    mensuales, anuales, alertas de presupuesto al 50/80/100%)
+  * Sección 5: Patrones de Resiliencia (RetryConBackoff con jitter exponencial,
+    CircuitBreaker con 3 estados, CadenaFallback con múltiples modelos)
+  * Sección 6: Métricas de Sostenibilidad (ReporteSostenibilidad consolida
+    cache + enrutamiento + latencias, visualizaciones)
+  * Sección 7: Sistema Optimizado (integra cache + enrutamiento + retry,
+    reporte comparativo optimizado vs no optimizado)
+
+
+================================================================================
+3. COMPONENTES Y PATRONES COMUNES
+================================================================================
+
+3.1. Tecnologías y Librerías Utilizadas
+- Python 3.13+ (type hints, dataclasses)
+- OpenAI API (GPT-4o-mini, GPT-4o)
+- pandas, matplotlib (análisis y visualización)
+- logging (estándar y estructurado)
+- ast (evaluación segura de expresiones)
+- re, uuid, hashlib, time, random, json, statistics
+- dotenv (configuración de entorno)
+
+3.2. Patrones de Diseño
+- Dataclass: Modelado de datos (RegistroMetrica, Traza, Span, Solicitud, etc.)
+- Wrapper: AgenteObservable envuelve la lógica del agente con métricas
+- Observer/Collector: RecolectorMetricas acumula y resume datos
+- Strategy: Diferentes modelos para diferentes complejidades
+- Chain of Responsibility: Cadena de fallback entre modelos
+- Circuit Breaker: Protección contra fallos en cascada
+- Decorator: Funcionalidad añadida (logging, métricas) sin modificar núcleo
+
+3.3. Conceptos Clave Transversales
+- Observabilidad: Logging + métricas + trazas
+- Trace ID: UUID único para correlación entre componentes
+- Logging estructurado: Formato JSON para análisis automatizado
+- Defensa en profundidad: Múltiples capas de seguridad
+- Degradación elegante: Servicio reducido bajo carga
+- Costo por token: Modelo de negocio basado en uso de LLMs
+
+
+================================================================================
+4. EVALUACIÓN DEL PROYECTO
+================================================================================
+
+4.1. Fortalezas
+- Estructura modular clara (IL3.1 -> IL3.4) con progresión lógica
+- Cada módulo tiene: README, presentación, script demo, notebook práctico
+- Notebooks listos para ejecutar con celdas de código y ejercicios
+- Implementaciones prácticas conectadas a APIs reales (OpenAI/GitHub Models)
+- Cubre el stack completo: observar -> trazar -> asegurar -> escalar
+- Manejo de legislación chilena (RUT, teléfono, Ley 19.628)
+- Ejercicios prácticos para el estudiante en cada notebook
+
+4.2. Áreas de Mejora Potenciales
+- Los README.md son muy breves (8 líneas cada uno)
+- Falta un archivo .env.example para configuración
+- Los notebooks requieren GITHUB_TOKEN (no hay fallback offline)
+- No hay tests unitarios ni de integración
+- La simulacion en scripts usa random sin semilla fija (no reproducible)
+- Cache semántico usa similitud coseno simple (no embeddings reales)
+
+4.3. Recomendaciones de Seguridad Adicional (Implementación Sencilla)
+
+A continuación se detalla cómo incorporar dos capas de seguridad esenciales
+con código mínimo y de baja complejidad:
+
+------------------------------------------------------------------------------
+4.3.1. Cifrado de Datos
+------------------------------------------------------------------------------
+
+Cifrado en tránsito:
+- Ya se obtiene por defecto usando conexiones HTTPS (TLS).
+- En los notebooks del proyecto, las llamadas a la API de OpenAI ya usan
+  HTTPS automáticamente. No requiere cambios.
+- Verificación: asegurarse de no usar verify=False en requests.
+
+Cifrado en reposo (para datos sensibles almacenados localmente):
+- Usar la librería cryptography (pip install cryptography).
+- Ejemplo de implementación para cifrar logs o configuraciones:
+
+```python
+from cryptography.fernet import Fernet
+
+# Generar y guardar clave (una sola vez)
+clave = Fernet.generate_key()
+with open("clave.key", "wb") as f:
+    f.write(clave)
+
+# Cifrar datos antes de guardarlos
+cipher = Fernet(clave)
+datos = b"token_secreto_o_log_sensible"
+cifrado = cipher.encrypt(datos)
+
+# Descifrar al leer
+descifrado = cipher.decrypt(cifrado)
+```
+
+- Dónde aplicaría en el proyecto:
+  * Cifrar los logs antes de escribirlos a disco en IL3.2
+  * Cifrar el archivo de configuración que almacena API keys
+  * Cifrar datos de PII detectados antes de almacenarlos
+
+------------------------------------------------------------------------------
+4.3.2. Gestión Segura de API Keys y Secrets
+------------------------------------------------------------------------------
+
+Nunca se deben hardcodear claves en el código fuente.
+El proyecto ya usa variables de entorno (GITHUB_TOKEN via python-dotenv),
+lo cual es correcto. Mejora recomendada:
+
+```python
+# En lugar de depender solo de .env (que puede committearse por error),
+# usar python-decouple que además soporta defaults y casting:
+
+from decouple import config
+
+GITHUB_TOKEN = config("GITHUB_TOKEN", default="")
+OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
+
+if not GITHUB_TOKEN:
+    raise EnvironmentError("GITHUB_TOKEN no configurado")
+```
+
+Otras buenas prácticas para secrets:
+- Crear .env.example con valores ficticios y agregar .env a .gitignore
+- Para producción, usar variables de entorno del sistema operativo
+  en lugar de archivos .env
+- No imprimir ni loguear claves (el proyecto ya evita hacerlo)
+
+Impacto en el proyecto:
+- Los notebooks ya cargan GITHUB_TOKEN desde .env (correcto)
+- Solo falta agregar .env.example y verificar .gitignore
+- Estos cambios son ~5 líneas de código y 1 archivo adicional
+
+------------------------------------------------------------------------------
+
+4.4. Otras Recomendaciones Generales
+- Agregar tests automatizados (pytest)
+- Incluir modo offline/demo sin API key
+- Agregar CI/CD pipeline básico
+- Expandir README.md con instrucciones de instalación
+- Añadir .env.example al repositorio
+
+
+================================================================================
+5. ESTADÍSTICAS DEL PROYECTO
+================================================================================
+
+Módulo      | Archivos | Líneas totales | Scripts (.py) | Notebooks (.ipynb) | Presentaciones
+------------|----------|----------------|---------------|--------------------|---------------
+IL3.1       |    4     |     1,273      |      1        |        1           |       1
+IL3.2       |    4     |     1,578      |      1        |        1           |       1
+IL3.3       |    4     |     1,960      |      1        |        1           |       1
+IL3.4       |    4     |     2,222      |      1        |        1           |       1
+Raíz        |    1     |       20       |      0        |        0           |       0
+------------|----------|----------------|---------------|--------------------|---------------
+TOTAL       |   17     |     7,053      |      4        |        4           |       4
+
+================================================================================
+FIN DEL ANÁLISIS
+================================================================================

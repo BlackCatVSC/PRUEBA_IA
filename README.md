@@ -13,7 +13,7 @@ El presente proyecto tiene como objetivo el desarrollo de un chatbot inteligente
 
 El sistema busca entregar respuestas claras, seguras y en tiempo real, mejorando la experiencia del usuario y optimizando los canales de atención.
 
-Para ello, se integran tecnologías como GitHub Models API, LangChain, técnicas de Prompt Engineering y arquitectura RAG, permitiendo construir un sistema conversacional con memoria, contexto y alta precisión.
+Para ello, se integran tecnologías como GitHub Models API (GPT-4o), LangChain para orquestación de agentes, y un planificador offline con clasificación de intenciones por palabras clave.
 
 ---
 
@@ -60,20 +60,13 @@ LangChain fue utilizado como framework para estructurar la interacción con el m
 
 ---
 
-### 3.3 Streaming (Respuestas en Tiempo Real)
-
-Se implementó streaming para mostrar respuestas progresivas, mejorando la experiencia del usuario.
-
-Ventajas:
-- Mayor percepción de velocidad
-- Simulación de escritura en tiempo real
-- Interacción más natural
-
 ---
+
+
 
 ### 3.4 Memoria Conversacional
 
-Se utilizó InMemoryChatMessageHistory para mantener el contexto de la conversación.
+Se utilizaron tres estrategias de memoria de LangChain: ConversationBufferMemory (historial completo), ConversationBufferWindowMemory (últimas 4 interacciones) y ConversationSummaryMemory (resumen automático vía LLM).
 
 Esto permite:
 - Recordar interacciones previas
@@ -84,10 +77,9 @@ Esto permite:
 
 ## 4. Prompt Engineering
 
-Se aplicaron técnicas de:
+Se aplicó la técnica de:
 
-- Zero-shot prompting (definición de rol y comportamiento)
-- Few-shot prompting (ejemplos guiados)
+- Zero-shot prompting (definición de rol, reglas de negocio y comportamiento)
 
 El prompt incluye:
 - Rol del asistente
@@ -101,12 +93,15 @@ Esto mejora significativamente la calidad de las respuestas.
 
 ## 5. Funcionalidades del Sistema
 
-- Chat interactivo en tiempo real  
-- Respuestas con streaming  
-- Memoria conversacional  
-- Uso de modelo GPT-4o  
-- Contexto especializado en BancoEstado  
-- Recuperación de información mediante RAG  
+- Chat interactivo en consola y frontend web
+- 15 herramientas bancarias (13 simuladas + 2 reales: Wikipedia, fecha/hora)
+- Memoria conversacional (3 estrategias: buffer, window, summary)
+- Uso de modelo GPT-4o via GitHub Models API
+- Planificador offline con clasificación por palabras clave y 14 intenciones
+- Orquestador multi-paso con dependencias y criticidad
+- Toma de decisiones adaptativa (evaluación de riesgo en transferencias y créditos)
+- Envío de reportes de sesión por correo SMTP
+- Frontend web conectado a backend Flask
 
 ---
 
@@ -115,85 +110,6 @@ Esto mejora significativamente la calidad de las respuestas.
 <p align="center">
   <img src="Diagrama.png" width="600">
 </p>
-
----
-
-## 6. Implementación de RAG (Retrieval-Augmented Generation)
-
-Se implementó la técnica RAG con el objetivo de mejorar la precisión del chatbot y evitar la generación de respuestas incorrectas.
-
-RAG permite que el modelo:
-1. Recupere información relevante desde una base de conocimiento
-2. Genere respuestas basadas en ese contexto
-
-El flujo es:
-
-Usuario → Embedding → FAISS → Recuperación → Respuesta
-
-Esto permite entregar respuestas más confiables y basadas en información real.
-
----
-
-## 7. Base Vectorial y Embeddings
-
-Se utilizó FAISS como base de datos vectorial para almacenar embeddings generados a partir de los textos.
-
-Proceso:
-- División de textos (chunking)
-- Conversión a embeddings
-- Almacenamiento en FAISS
-- Búsqueda por similitud semántica
-
-Esto permite que el sistema entienda el significado de las preguntas, no solo palabras exactas.
-
----
-
-## 8. Memoria Híbrida
-
-El sistema implementa una memoria híbrida compuesta por:
-
-- Memoria estructurada (historial)
-- Memoria vectorial (FAISS)
-- Resumen conversacional (summary)
-
-Esto permite:
-- Mantener coherencia
-- Reducir uso de tokens
-- Mejorar contexto en respuestas
-
----
-
-## 9. Evaluación del Sistema RAG
-
-Se evaluó el chatbot utilizando tres métricas:
-
-- Faithfulness (fidelidad)
-- Relevancia
-- Context Precision
-
-Resultados:
-
-- Faithfulness: 0.60  
-- Relevancia: 0.80  
-- Context Precision: 0.90  
-
-Interpretación:
-
-- Excelente recuperación de contexto (RAG funciona correctamente)
-- Buena capacidad de respuesta
-- Presencia de algunas alucinaciones
-
----
-
-## 10. Análisis de Resultados
-
-Los resultados muestran que:
-
-- El sistema recupera correctamente información relevante
-- Las respuestas son en su mayoría adecuadas
-- Existen casos donde el modelo genera información no presente en el contexto
-
-Esto indica que el principal desafío es mejorar la fidelidad del modelo.
 
 ---
 
@@ -208,9 +124,9 @@ Esto indica que el principal desafío es mejorar la fidelidad del modelo.
 
 ## 12. Conclusión
 
-El chatbot desarrollado integra tecnologías modernas de inteligencia artificial como RAG, embeddings, bases vectoriales y memoria híbrida, logrando un sistema conversacional avanzado.
+El chatbot desarrollado integra GPT-4o mediante GitHub Models API, LangChain para orquestación de agentes con function calling, y un planificador offline con clasificación de intenciones, logrando un sistema conversacional funcional.
 
-El sistema demuestra un alto nivel de precisión en la recuperación de información y una buena calidad de respuesta, aunque aún presenta desafíos relacionados con la fidelidad del modelo.
+El sistema responde consultas bancarias usando herramientas simuladas, mantiene contexto conversacional mediante memoria y evalúa riesgos en operaciones como transferencias y créditos. La principal limitación es que la API bancaria es simulada (BancoEstado es un sistema cerrado), por lo que los datos de clientes, saldos y transacciones son ficticios.
 
 En conclusión, el proyecto logra cumplir los objetivos propuestos, ofreciendo una solución eficiente, escalable y alineada con las necesidades actuales de atención al cliente en el ámbito financiero.
 

@@ -22,7 +22,7 @@ load_dotenv()
 # Mapear variables para LangChain
 os.environ["OPENAI_API_BASE"] = os.environ.get("GITHUB_BASE_URL", "https://models.inference.ai.azure.com")
 os.environ["OPENAI_API_KEY"] = os.environ.get("GITHUB_TOKEN", "")
-os.environ["LANGCHAIN_TRACING_V2"] = "false"
+os.environ["LANGCHAIN_TRACING_V2"] = os.environ.get("LANGSMITH_TRACING", "false")
 
 # Check config
 if not os.environ.get("GITHUB_TOKEN"):
@@ -54,17 +54,25 @@ else:
 # 2. CARGA DE HERRAMIENTAS (IL2.1)
 # =============================================
 
-from herramientas_bancoestado import TOOL_LIST
+from herramientas.herramientas_bancoestado import TOOL_LIST
 
 # Mapa nombre -> funcion para busqueda rapida
 TOOL_MAP = {tool.name: tool for tool in TOOL_LIST}
 print(f"[OK] {len(TOOL_LIST)} herramientas BancoEstado cargadas")
 
 # =============================================
+# 2b. SEGURIDAD (RA3 - IL3.3)
+# =============================================
+
+from herramientas.seguridad import OrquestadorSeguridad
+
+seguridad = OrquestadorSeguridad()
+
+# =============================================
 # 3. PLANIFICADOR Y ORQUESTADOR (IL2.3)
 # =============================================
 
-from planificador import Planificador, Orquestador
+from herramientas.planificador import Planificador, Orquestador
 
 planificador = Planificador()
 orquestador = Orquestador(TOOL_MAP)
@@ -171,7 +179,7 @@ def registrar_accion(consulta: str, herramienta: str, exitoso: bool, resultado: 
 
 def enviar_reporte_sesion():
     """Genera y envia el reporte HTML de toda la sesion."""
-    from email_sender import generar_reporte_html, enviar_reporte
+    from herramientas.email_sender import generar_reporte_html, enviar_reporte
 
     if not sesion:
         print("[!] No hay acciones registradas para reportar.")
@@ -270,7 +278,7 @@ def mostrar_beneficios(saldo: float = None):
 def verificar_beneficios():
     """Verifica los beneficios con el saldo real de la API y pregunta si desea obtener una."""
     try:
-        from herramientas_bancoestado import api
+        from herramientas.herramientas_bancoestado import api
         data_ahorros = json.loads(api.consultar_saldo("12.345.678-9", "CuentaAhorros"))
         data_rut = json.loads(api.consultar_saldo("12.345.678-9", "CuentaRUT"))
 
@@ -293,7 +301,7 @@ def verificar_beneficios():
 
 def flujo_actualizar_saldo_interactivo() -> bool:
     """Flujo interactivo para que el usuario actualice su saldo paso a paso."""
-    from herramientas_bancoestado import api
+    from herramientas.herramientas_bancoestado import api
 
     print("\n" + "=" * 50)
     print("  ACTUALIZAR SALDO")
@@ -494,7 +502,7 @@ def loop_principal():
                 tipo = partes[1]
                 try:
                     monto = float(partes[2].replace(".", "").replace(",", ""))
-                    from herramientas_bancoestado import api
+                    from herramientas.herramientas_bancoestado import api
                     res = json.loads(api.actualizar_saldo("12.345.678-9", tipo, monto))
                     if res.get("success"):
                         print(f"\n[OK] {res['mensaje']}")
@@ -531,9 +539,26 @@ def loop_principal():
         if consulta == "/reporte":
             enviar_reporte_sesion()
             continue
+        if consulta in ("/seguridad", "/security"):
+            print("\n=== METRICAS DE SEGURIDAD ===")
+            for k, v in seguridad.obtener_metricas().items():
+                print(f"  {k}: {v}")
+            print()
+            continue
+
+        # Validacion de seguridad
+        validacion = seguridad.validar_entrada(consulta, rate_limit_key="cli")
+        if not validacion["permitido"]:
+            codigo = validacion.get("codigo", "DENEGADO")
+            print(f"\n[SEGURIDAD] {codigo}: {validacion['error']}")
+            registrar_accion(consulta, "seguridad", False, f"Bloqueado: {codigo}")
+            activo = mostrar_pregunta_final()
+            continue
+
+        consulta_segura = validacion["mensaje_sanitizado"]
 
         # Detectar si el usuario quiere actualizar saldo -> flujo interactivo
-        plan_preview = planificador.crear_plan(consulta)
+        plan_preview = planificador.crear_plan(consulta_segura)
         if "actualizar_saldo" in plan_preview.get("intenciones_detectadas", []):
             print("\n--- Detecte que necesitas actualizar tu saldo ---")
             flujo_actualizar_saldo_interactivo()
@@ -553,9 +578,15 @@ def loop_principal():
 
         print("\n--- Procesando consulta ---")
         if MODO_DEMO:
-            respuesta = procesar_consulta_modo_demo(consulta)
+            respuesta = procesar_consulta_modo_demo(consulta_segura)
         else:
-            respuesta = procesar_consulta_llm(consulta, memoria_actual)
+            respuesta = procesar_consulta_llm(consulta_segura, memoria_actual)
+
+        validacion_salida = seguridad.validar_salida(respuesta)
+        if validacion_salida["tiene_pii"]:
+            print(f"[SEGURIDAD] PII detectado en respuesta: {validacion_salida['pii_detectada']}")
+        respuesta = validacion_salida["corregida"]
+
         print(f"\nRespuesta: {respuesta}")
 
         activo = mostrar_pregunta_final()

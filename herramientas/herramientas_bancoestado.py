@@ -7,70 +7,69 @@ Cada herramienta sigue el patrón JSON Schema para Function Calling.
 
 import json
 from langchain_classic.agents import tool
-from bancoestado_api import BancoEstadoAPI
+from .bancoestado_api import BancoEstadoAPI
 
-RUT_POR_DEFECTO = "12.345.678-9"
 api = BancoEstadoAPI()
 
 
 @tool
 def consultar_saldo(tipo_cuenta: str = "CuentaRUT") -> str:
-    """Consulta el saldo disponible de una cuenta bancaria. Recibe el tipo de cuenta (CuentaRUT o CuentaAhorros)."""
-    return api.consultar_saldo(RUT_POR_DEFECTO, tipo_cuenta)
+    """Consulta el saldo disponible de una cuenta bancaria. Recibe el tipo de cuenta (CuentaRUT o CuentaAhorros). Tambien sirve para VERIFICAR si una cuenta existe: si devuelve error 'no encontrada', la cuenta no existe."""
+    return api.consultar_saldo(api.rut, tipo_cuenta)
 
 
 @tool
 def consultar_estado_cuenta(tipo_cuenta: str = "CuentaRUT") -> str:
     """Obtiene el estado de cuenta completo con todos los movimientos e ingresos/egresos del período."""
-    return api.consultar_estado_cuenta(RUT_POR_DEFECTO, tipo_cuenta)
+    return api.consultar_estado_cuenta(api.rut, tipo_cuenta)
 
 
 @tool
 def crear_cuenta_rut() -> str:
-    """Crea una nueva CuentaRUT para el cliente. No requiere parámetros."""
-    return api.crear_cuenta_rut(RUT_POR_DEFECTO)
+    """Crea una NUEVA CuentaRUT. SOLO si el cliente NO tiene una. Si ya tiene, devuelve error. Primero usa consultar_saldo('CuentaRUT') para verificar si existe."""
+    return api.crear_cuenta_rut(api.rut)
 
 
 @tool
 def crear_cuenta_ahorros(deposito_inicial: float = 0) -> str:
-    """Crea una nueva Cuenta de Ahorros. Recibe un monto opcional como depósito inicial."""
-    return api.crear_cuenta_ahorros(RUT_POR_DEFECTO, deposito_inicial)
+    """Crea una NUEVA Cuenta de Ahorros. SOLO si el cliente NO tiene una. Si ya tiene, devuelve error. Primero usa consultar_saldo('CuentaAhorros') para verificar si existe."""
+    return api.crear_cuenta_ahorros(api.rut, deposito_inicial)
 
 
 @tool
 def bloquear_tarjeta(numero_tarjeta: str, motivo: str = "extravio") -> str:
     """Bloquea una tarjeta bancaria por pérdida, robo o sospecha de fraude. Recibe número de tarjeta y motivo."""
-    return api.bloquear_tarjeta(RUT_POR_DEFECTO, numero_tarjeta, motivo)
+    return api.bloquear_tarjeta(api.rut, numero_tarjeta, motivo)
 
 
 @tool
 def desbloquear_tarjeta(numero_tarjeta: str) -> str:
     """Desbloquea una tarjeta que fue bloqueada previamente. Recibe el número de tarjeta."""
-    return api.desbloquear_tarjeta(RUT_POR_DEFECTO, numero_tarjeta)
+    return api.desbloquear_tarjeta(api.rut, numero_tarjeta)
 
 
 @tool
 def simular_credito(monto: float, plazo_meses: int) -> str:
     """Simula un crédito de consumo. Calcula cuota mensual, interés total y tabla de pagos según monto y plazo (12,24,36,48 meses)."""
-    return api.simular_credito(RUT_POR_DEFECTO, monto, plazo_meses)
+    return api.simular_credito(api.rut, monto, plazo_meses)
 
 
 @tool
 def solicitar_credito(monto: float, plazo_meses: int) -> str:
     """Solicita un crédito formalmente. Montos sobre $3.000.000 requieren verificación adicional. Montos sobre $5.000.000 requieren ir a sucursal."""
-    return api.solicitar_credito(RUT_POR_DEFECTO, monto, plazo_meses)
+    return api.solicitar_credito(api.rut, monto, plazo_meses)
 
 
 @tool
 def consultar_creditos() -> str:
     """Lista todos los créditos activos del cliente con su estado, saldo y próxima cuota."""
-    return api.consultar_creditos(RUT_POR_DEFECTO)
+    return api.consultar_creditos(api.rut)
 
 
 @tool
 def transferir(tipo_cuenta_origen: str, rut_destino: str, tipo_cuenta_destino: str, monto: float) -> str:
-    """Realiza una transferencia entre cuentas. Recibe tipo cuenta origen, RUT destino, tipo cuenta destino y monto."""
-    return api.transferir(RUT_POR_DEFECTO, tipo_cuenta_origen, rut_destino, tipo_cuenta_destino, monto)
+    """Realiza una transferencia entre cuentas del cliente. Funciona en AMBOS sentidos: desde CuentaRUT a CuentaAhorros, o desde CuentaAhorros a CuentaRUT. Recibe el tipo de cuenta origen, el RUT destino (mismo cliente), el tipo de cuenta destino y el monto."""
+    return api.transferir(api.rut, tipo_cuenta_origen, rut_destino, tipo_cuenta_destino, monto)
 
 
 @tool
@@ -92,9 +91,9 @@ def consultar_productos() -> str:
 
 
 @tool
-def actualizar_saldo(tipo_cuenta: str, monto: float) -> str:
-    """Actualiza el saldo de una cuenta (CuentaRUT o CuentaAhorros) agregando un monto. Usar cuando el cliente reporte depositos, ganancias de loteria, herencias, etc."""
-    return api.actualizar_saldo(RUT_POR_DEFECTO, tipo_cuenta, monto)
+def actualizar_saldo(monto: float, tipo_cuenta: str = "CuentaRUT") -> str:
+    """SOLO para depositos externos (loteria, herencia, ingreso de dinero externo). Agrega un monto POSITIVO a una cuenta (CuentaRUT o CuentaAhorros). NO acepta montos negativos. NO la uses para transferir entre cuentas del cliente, usa 'transferir' para eso."""
+    return api.actualizar_saldo(api.rut, tipo_cuenta, monto)
 
 
 @tool

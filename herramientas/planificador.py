@@ -111,6 +111,7 @@ class Planificador:
     """
     Planificador jerárquico (IL2.3).
     Descompone una consulta en pasos ordenados por criticidad y dependencias.
+    Soporta clasificación vía LLM (cuando hay modelo disponible) o por palabras clave.
     """
 
     def __init__(self):
@@ -145,6 +146,33 @@ class Planificador:
         detectadas.sort(key=lambda x: (orden_criticidad.get(x["criticidad"], 9), x["prioridad"]))
 
         return detectadas
+
+    def clasificar_con_llm(self, consulta: str, llm) -> list:
+        """Clasifica intención usando un LLM. Si falla, cae a palabras clave."""
+        try:
+            import json
+            intenciones_conocidas = list(INTENCIONES.keys())
+            prompt = (
+                "Clasifica la siguiente consulta bancaria en UNA de estas intenciones:\n"
+                + "\n".join(f"- {i}" for i in intenciones_conocidas)
+                + "\n\nResponde ÚNICAMENTE con el nombre de la intención exacta, nada más."
+                + f"\n\nConsulta: {consulta}"
+            )
+            respuesta = llm.invoke(prompt)
+            texto = respuesta.content.strip().lower() if hasattr(respuesta, "content") else str(respuesta).strip().lower()
+
+            for intencion in intenciones_conocidas:
+                if intencion in texto:
+                    config = INTENCIONES[intencion]
+                    return [{
+                        "intencion": intencion,
+                        "criticidad": config["criticidad"],
+                        "prioridad": config["prioridad"],
+                        "herramientas": config["herramientas_requeridas"],
+                    }]
+        except Exception:
+            pass
+        return self.clasificar(consulta)
 
     def crear_plan(self, consulta: str) -> dict:
         """
@@ -285,7 +313,7 @@ class Orquestador:
                 consulta_lower = consulta.lower()
                 tipo_cuenta = "CuentaAhorros" if "ahorro" in consulta_lower else "CuentaRUT"
                 try:
-                    from herramientas_bancoestado import api as api_bee
+                    from .herramientas_bancoestado import api as api_bee
                     card_data = json.loads(api_bee.buscar_tarjeta_por_cuenta("12.345.678-9", tipo_cuenta))
                     if card_data.get("success"):
                         args[name] = card_data["numero"]

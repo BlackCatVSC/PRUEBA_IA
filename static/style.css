@@ -1,0 +1,37 @@
+body { font-family: 'Inter', sans-serif; }
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.chat-input-shadow {
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.05);
+}
+.sidebar-transition {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.floating-anim {
+    animation: floating 3s ease-in-out infinite;
+}
+@keyframes floating {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.typewriter-cursor::after {
+    content: '▌';
+    animation: blink 0.7s step-end infinite;
+    color: #ff6600;
+    font-weight: 300;
+    margin-left: 1px;
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.delete-chat-btn {
+    opacity: 0;
+}
+.history-entry:hover .delete-chat-btn {
+    opacity: 1;
+}

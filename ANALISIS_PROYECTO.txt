@@ -1,0 +1,371 @@
+===============================================================================
+  ANALISIS COMPLETO DEL PROYECTO - BANCOESTADO CHATBOT
+===============================================================================
+  Fecha: 17/06/2026
+  Proyecto: C:\PRUEBA_IA
+===============================================================================
+
+1. ESTRUCTURA DE CARPETAS Y ARCHIVOS
+===============================================================================
+
+C:\PRUEBA_IA\
+│
+├── .env                          # Variables de entorno (credenciales live)
+├── .env.example                  # Plantilla de variables de entorno
+├── .gitignore
+├── LICENSE                       # Licencia MIT
+├── requirements.txt              # Dependencias Python
+│
+├── agente_bancoestado.py         # CLI principal del agente (LLM + demo)
+├── bancoestado_api.py            # API bancaria SIMULADA (13 endpoints fake)
+├── herramientas_bancoestado.py   # 15 herramientas LangChain (@tool)
+├── planificador.py               # Planificador jerarquico + Orquestador
+├── email_sender.py               # Envio de reportes por SMTP Gmail
+├── demo_rapida.py                # Demo automatica de todas las capacidades
+├── server.py                     # Servidor Flask (puente frontend-backend)
+│
+├── prototipo_mcp.html            # Frontend HTML del chatbot
+├── script.js                     # Logica JS del frontend
+├── style.css                     # Estilos del frontend
+│
+├── FLUJO_USO.md                  # Guia de uso del sistema
+├── README.md                     # Informe del proyecto
+├── README_AGENTE.md              # Documentacion tecnica detallada
+├── Diagrama.png                  # Diagrama de arquitectura
+│
+├── Borrador.ipynb                # Notebook Jupyter (trabajo previo)
+├── Evaluacion_1.ipynb            # Notebook Jupyter (evaluacion previa)
+│
+├── RA2-Extraccion\               # Material del curso (PDFs, markdowns)
+│   ├── EP2_ISY0101_Estudiante.pdf
+│   ├── README.txt
+│   ├── IL2.1.txt
+│   ├── IL2.2.txt
+│   ├── IL2.3.txt
+│   └── IL2.4.txt
+│
+└── ANALISIS_PROYECTO.txt         # Este archivo
+
+
+2. QUE HACE CADA ARCHIVO
+===============================================================================
+
+2.1 agente_bancoestado.py (573 lineas)
+-------------------------------------------------------------------------------
+- Archivo principal del agente
+- Configura GPT-4o via LangChain + GitHub Models API
+- Carga 15 herramientas bancarias desde herramientas_bancoestado.py
+- Implementa 3 tipos de memoria: Buffer, Window, Summary
+- Crea AgentExecutor con create_openai_tools_agent
+- Loop de consola interactiva con deteccion de comandos
+- Sistema de beneficios/tarjetas (Bronze, Plata, AURUM, Platino)
+- Flujo interactivo para actualizar saldo
+- Tracking de sesion con registro de acciones
+- Envio de reporte HTML por correo al finalizar
+- Dos modos: DEMO (sin LLM) y COMPLETO (con GPT-4o)
+
+2.2 bancoestado_api.py (493 lineas)
+-------------------------------------------------------------------------------
+- API BANCARIA COMPLETAMENTE SIMULADA
+- NO hace llamadas HTTP reales a ningun banco
+- Datos almacenados en memoria (diccionarios de Python)
+- Un solo cliente de prueba: RUT 12.345.678-9, Juan Perez
+- 13 endpoints simulados:
+  * consultar_datos_cliente
+  * consultar_saldo
+  * consultar_estado_cuenta
+  * crear_cuenta_rut
+  * crear_cuenta_ahorros
+  * bloquear_tarjeta
+  * desbloquear_tarjeta
+  * buscar_tarjeta_por_cuenta
+  * simular_credito
+  * solicitar_credito
+  * consultar_creditos
+  * transferir
+  * simular_ahorro
+  * actualizar_saldo
+  * listar_sucursales
+  * consultar_productos
+- Toda la logica es if/else y datos hardcodeados
+- No hay persistencia (los datos se pierden al reiniciar)
+
+2.3 herramientas_bancoestado.py (139 lineas)
+-------------------------------------------------------------------------------
+- 15 herramientas decoradas con @tool de LangChain
+- Cada herramienta es un wrapper que llama a bancoestado_api.py
+- Una herramienta real: buscar_wikipedia (usa la libreria wikipedia)
+- Una herramienta real: obtener_fecha_hora (usa datetime)
+- Las 13 restantes son wrappers de la API simulada
+
+2.4 planificador.py (369 lineas)
+-------------------------------------------------------------------------------
+- Planificador jerarquico (clasifica intenciones por palabras clave)
+- 14 categorias de intencion con criticidad y prioridad
+- Orquestador que ejecuta pasos secuencialmente
+- Toma de decisiones adaptativa:
+  * evaluar_riesgo_transferencia (umbrales 30%, 70%, 100%)
+  * evaluar_credito (umbral 25%, 40% de ingresos)
+- Extraccion de montos desde NLP (detecta "150 millones" -> 150000000)
+- TODO el clasificador es if/else con subcadenas (no usa IA)
+
+2.5 email_sender.py (136 lineas)
+-------------------------------------------------------------------------------
+- Envio de reportes por SMTP Gmail (TLS 587)
+- Genera HTML con tabla de acciones de la sesion
+- Conexion REAL a smtp.gmail.com
+- Usa credenciales del .env (EMAIL_FROM, EMAIL_PASSWORD, EMAIL_TO)
+
+2.6 demo_rapida.py (186 lineas)
+-------------------------------------------------------------------------------
+- Script de demostracion automatica
+- Muestra todas las capacidades: herramientas, memoria, planificacion
+- No requiere interaccion del usuario
+- Resumen por indicador de evaluacion (IE1 a IE10)
+
+2.7 server.py (176 lineas)
+-------------------------------------------------------------------------------
+- Servidor Flask creado para conectar frontend con backend
+- Endpoint POST /chat (recibe message + session_id)
+- Endpoint GET /health
+- Crea sesiones con memoria ConversationBufferMemory por session_id
+- Modo GPT-4o o modo Demo segun disponibilidad de token
+- Gestion de sesiones en memoria (no persistente)
+
+2.8 prototipo_mcp.html (325 lineas)
+-------------------------------------------------------------------------------
+- Frontend HTML del chatbot
+- Interfaz con login, registro, chat, historial lateral
+- Usa Tailwind CSS (CDN) + Google Fonts + Material Icons
+- Conectado a script.js y style.css
+
+2.9 script.js (403 lineas)
+-------------------------------------------------------------------------------
+- Logica del frontend
+- Maneja login/registro en localStorage
+- Gestion de sesiones de chat con historial
+- Conexion al servidor Flask via fetch (sendToServer)
+- Spinner de carga mientras espera respuesta del backend
+- Anteriormente tenia respuestas hardcodeadas (removidas)
+
+2.10 style.css (14 lineas)
+-------------------------------------------------------------------------------
+- Estilos para el frontend (animaciones, sombras, fuentes)
+
+2.11 .env
+-------------------------------------------------------------------------------
+- GITHUB_TOKEN: github_pat_... (token live de GitHub Models)
+- LANGSMITH_API_KEY: clave live de LangSmith
+- EMAIL_PASSWORD: contrasena de aplicacion Gmail
+- Las 3 son credenciales reales y funcionales
+
+2.12 RA2-Extraccion/
+-------------------------------------------------------------------------------
+- Material del curso con instructivos para IL2.1 a IL2.4
+- Notebooks de referencia (CrewAI, LangChain, memoria, etc.)
+- PDF de la evaluacion EP2
+
+
+3. CONEXIONES EXTERNAS (REALES vs SIMULADAS)
+===============================================================================
+
+3.1 CONEXIONES REALES (SI existen)
+-------------------------------------------------------------------------------
+| Conexion              | Tipo      | Archivo               | Estado     |
+|-----------------------|-----------|-----------------------|------------|
+| GitHub Models API     | HTTPS     | agente_bancoestado.py | FUNCIONAL  |
+| (GPT-4o via LangChain)|           | server.py             | CON GITHUB_TOKEN |
+| SMTP Gmail            | SMTP TLS  | email_sender.py       | FUNCIONAL  |
+| (envio de correos)    |           |                       | Con .env config|
+| Wikipedia API         | HTTPS     | herramientas_bancoestado.py | FUNCIONAL|
+| LangSmith             | HTTPS     | agente_bancoestado.py | CONFIGURADO|
+| (observabilidad)      |           |                       | (desactivado)|
+
+3.2 CONEXIONES SIMULADAS (NO existen)
+-------------------------------------------------------------------------------
+| Conexion              | Realidad  | Archivo               |
+|-----------------------|-----------|-----------------------|
+| BancoEstado API       | NO EXISTE | bancoestado_api.py   |
+|                       | Simulacion| Todo if/else con datos|
+|                       | completa  | hardcodeados en memoria|
+| Base de datos         | NO EXISTE | Ninguno              |
+| Persistencia          | NO EXISTE | Solo localStorage    |
+|                       |           | (frontend) y memoria  |
+|                       |           | volatil (backend)    |
+| Autenticacion real    | NO EXISTE | Login/registro son   |
+|                       |           | solo localStorage    |
+| RAG / FAISS           | NO EXISTE | Mencionado en README |
+|                       |           | pero no implementado |
+
+
+4. PUNTO DEBIL PRINCIPAL
+===============================================================================
+
+4.1 La API bancaria es 100% simulada con if/else
+-------------------------------------------------------------------------------
+- bancoestado_api.py NO se conecta a ningun sistema real
+- Todos los datos son inventados (saldos, tarjetas, creditos)
+- Un solo cliente de prueba con datos fijos
+- No hay persistencia: al reiniciar el script, los datos vuelven a cero
+- Esto es aceptable para un proyecto academico (BancoEstado es sistema
+  cerrado), pero NO es un sistema productivo
+
+4.2 El frontend y backend ahora estan conectados
+-------------------------------------------------------------------------------
+- Originalmente prototipo_mcp.html tenia respuestas hardcodeadas
+- Con server.py, el frontend llama al backend Flask
+- El backend usa GPT-4o real (si hay GITHUB_TOKEN)
+- La conexion funciona correctamente (verificada con test)
+
+4.3 Credenciales expuestas en .env
+-------------------------------------------------------------------------------
+- .env contiene GITHUB_TOKEN, LANGSMITH_API_KEY, EMAIL_PASSWORD reales
+- Esto es un riesgo de seguridad si el repositorio se hace publico
+- .env esta en .gitignore, pero las credenciales deberian rotarse
+
+4.4 El planificador es solo palabras clave
+-------------------------------------------------------------------------------
+- planificador.py usa if/else con subcadenas para clasificar intenciones
+- No utiliza embeddings ni NLP real
+- Ejemplo: "perdi" activa bloqueo de tarjeta, pero "perdón" tambien
+- En modo DEMO, el sistema funciona completamente con if/else
+- En modo COMPLETO, GPT-4o hace el trabajo pesado
+
+
+5. QUE PARTES YA FUNCIONAN Y CUALES NO
+===============================================================================
+
+5.1 FUNCIONAN (probado)
+-------------------------------------------------------------------------------
+| Componente            | Estado     | Detalle               |
+|-----------------------|------------|-----------------------|
+| CLI agente           | FUNCIONAL  | python agente_bancoestado.py|
+| con GPT-4o           | FUNCIONAL  | Con GITHUB_TOKEN configurado|
+| en modo demo         | FUNCIONAL  | Sin token, usa planificador|
+| Herramientas         | FUNCIONAL  | 15 tools operativas   |
+| Planificador         | FUNCIONAL  | Clasifica y ordena    |
+| Orquestador          | FUNCIONAL  | Ejecuta pasos         |
+| Memoria buffer       | FUNCIONAL  | ConversationBufferMemory|
+| Memoria window       | FUNCIONAL  | ConversationBufferWindowMemory|
+| Envio de correos     | FUNCIONAL  | SMTP Gmail configurado|
+| Demo rapida          | FUNCIONAL  | python demo_rapida.py |
+| Servidor Flask       | FUNCIONAL  | python server.py      |
+| Endpoint /chat       | FUNCIONAL  | POST responde con GPT-4o|
+| Frontend HTML        | FUNCIONAL  | Con Live Server       |
+| Conexion front-back  | FUNCIONAL  | Fetch a localhost:5000|
+| Login/registro       | FUNCIONAL  | localStorage          |
+| Sesiones de chat     | FUNCIONAL  | localStorage + server |
+
+5.2 NO FUNCIONAN / NO IMPLEMENTADOS
+-------------------------------------------------------------------------------
+| Componente            | Estado     | Detalle               |
+|-----------------------|------------|-----------------------|
+| API bancaria real    | N/A        | BancoEstado es cerrado|
+| Persistencia datos   | NO         | Todo en memoria volatil|
+| RAG / FAISS          | NO         | Mencionado en README  |
+|                       |            | pero no implementado  |
+| Streaming respuestas | NO         | README lo menciona    |
+|                       |            | pero no esta en codigo|
+| CrewAI               | NO         | En requirements pero  |
+|                       |            | no se usa (incompatible|
+|                       |            | con Python 3.14)      |
+| Autenticacion real   | NO         | Solo localStorage    |
+| Despliegue produccion| NO         | Solo desarrollo local|
+| Tests automatizados  | NO         | pytest en requirements|
+|                       |            | pero sin tests escritos|
+
+
+6. DIAGRAMA DE ARQUITECTURA ACTUAL
+===============================================================================
+
+┌──────────────────────────────────────────────────────────────────┐
+│                    USUARIO (2 opciones)                          │
+└──────┬───────────────────────────────────┬───────────────────────┘
+       │                                   │
+       ▼                                   ▼
+┌──────────────┐                  ┌──────────────────┐
+│ Consola CLI  │                  │   Navegador      │
+│ agente_banco │                  │ prototipo_mcp.html│
+│ estado.py    │                  │ + script.js      │
+└──────┬───────┘                  └────────┬─────────┘
+       │                                   │ fetch POST /chat
+       │                                   ▼
+       │                           ┌──────────────────┐
+       │                           │   server.py       │
+       │                           │  (Flask API)      │
+       │                           └────────┬─────────┘
+       │                                   │
+       └──────────┬────────────────────────┘
+                  │
+                  ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                      NUCLEO DEL AGENTE                          │
+│                                                                │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │              AgentExecutor (LangChain)                    │  │
+│  │  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐  │  │
+│  │  │ GPT-4o (LLM)│  │   Memoria    │  │ System Prompt  │  │  │
+│  │  │ via GitHub  │  │ Conversation │  │ BancoEstado    │  │  │
+│  │  │ Models API  │  │ BufferMemory │  │ asistente      │  │  │
+│  │  └─────────────┘  └──────────────┘  └────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                           │                                    │
+│                           ▼                                    │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │              15 HERRAMIENTAS (@tool)                     │  │
+│  │  consultar_saldo     bloquear_tarjeta   simular_credito  │  │
+│  │  consultar_estado    desbloquear_tarjeta solicitar_cred  │  │
+│  │  crear_cuenta_rut    transferir          consultar_cred  │  │
+│  │  crear_cuenta_ahorro simular_ahorro     actualizar_saldo │  │
+│  │  listar_sucursales   consultar_productos buscar_wikipedia│  │
+│  │  obtener_fecha_hora                                      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                           │                                    │
+│                           ▼                                    │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │           bancoestado_api.py (SIMULADA)                  │  │
+│  │  • Datos en memoria (NO hay API real)                   │  │
+│  │  • Un solo cliente: 12.345.678-9, Juan Perez            │  │
+│  │  • Saldo CuentaRUT: $120.000 (hardcodeado)              │  │
+│  │  • Saldo Ahorros: $450.000 (hardcodeado)                │  │
+│  │  • 13 endpoints con logica if/else                      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                           │                                    │
+│                           ▼                                    │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Conexiones REALES:                                      │  │
+│  │  • GitHub Models API → GPT-4o (https)                   │  │
+│  │  • SMTP Gmail → envio de reportes (smtp.gmail.com:587)  │  │
+│  │  • Wikipedia API → busquedas generales (https)          │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+
+
+7. RESUMEN EJECUTIVO
+===============================================================================
+
+El proyecto es un asistente virtual para BancoEstado que combina:
+
+  REAL:
+  ✅ GPT-4o via GitHub Models API (LangChain)
+  ✅ SMTP Gmail para reportes
+  ✅ Wikipedia API
+  ✅ Frontend HTML/CSS/JS funcional
+  ✅ Servidor Flask conectando frontend y backend
+
+  SIMULADO:
+  ❌ Toda la API bancaria (datos falsos en memoria)
+  ❌ Autenticacion de usuarios (solo localStorage)
+  ❌ Persistencia de datos (todo volatil)
+  ❌ RAG / busqueda semantica (mencionado pero no implementado)
+
+  PENDIENTE / NO IMPLEMENTADO:
+  ⚠ Streaming de respuestas (mencionado en README)
+  ⚠ Tests automatizados (pytest en requirements)
+  ⚠ Despliegue a produccion
+  ⚠ Integracion con CrewAI (incompatible con Python 3.14)
+
+  PUNTO DEBIL PRINCIPAL:
+  La simulacion bancaria (bancoestado_api.py) es aceptable para un
+  proyecto academico, pero el sistema NO puede conectarse a un banco
+  real sin reemplazar completamente esa capa con una API autentica.

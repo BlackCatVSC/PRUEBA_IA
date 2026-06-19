@@ -21,7 +21,7 @@ print("\n" + "=" * 65)
 print("  [IL2.1] HERRAMIENTAS Y FRAMEWORK LANGCHAIN")
 print("=" * 65)
 
-from herramientas_bancoestado import TOOL_LIST
+from herramientas.herramientas_bancoestado import TOOL_LIST
 TOOL_MAP = {t.name: t for t in TOOL_LIST}
 
 print(f"\n  Framework: LangChain (langchain_classic.agents)")
@@ -69,7 +69,7 @@ print("\n" + "=" * 65)
 print("  [IL2.3] PLANIFICACION Y TOMA DE DECISIONES")
 print("=" * 65)
 
-from planificador import Planificador, Orquestador
+from herramientas.planificador import Planificador, Orquestador
 
 p = Planificador()
 o = Orquestador(TOOL_MAP)
