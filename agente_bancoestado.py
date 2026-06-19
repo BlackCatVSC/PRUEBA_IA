@@ -66,7 +66,7 @@ print(f"[OK] {len(TOOL_LIST)} herramientas BancoEstado cargadas")
 
 from herramientas.seguridad import OrquestadorSeguridad
 
-seguridad = OrquestadorSeguridad()
+seguridad = OrquestadorSeguridad(llm=llm if not MODO_DEMO else None)
 
 # =============================================
 # 3. PLANIFICADOR Y ORQUESTADOR (IL2.3)

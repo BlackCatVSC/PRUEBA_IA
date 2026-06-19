@@ -62,61 +62,99 @@ def enviar_reporte(asunto: str, cuerpo_html: str, destinatario: str = None):
 
 
 def enviar_notificacion_transaccion(tipo: str, monto: float, cuenta: str, saldo_nuevo: float,
-                                     destino: str = None, rut_origen: str = None, rut_destino: str = None):
+                                     destino: str = None, rut_origen: str = None, rut_destino: str = None,
+                                     cuenta_destino: str = None):
     """
     Envia un correo de notificacion por deposito o transferencia.
 
     Args:
         tipo: "deposito" o "transferencia"
         monto: monto de la operacion
-        cuenta: tipo de cuenta (CuentaRUT, CuentaAhorros)
-        saldo_nuevo: saldo posterior a la operacion
+        cuenta: tipo de cuenta origen (CuentaRUT, CuentaAhorros)
+        saldo_nuevo: saldo posterior a la operacion en la cuenta origen
         destino: email destino (opcional)
         rut_origen: RUT origen (solo transferencia)
         rut_destino: RUT destino (solo transferencia)
+        cuenta_destino: tipo de cuenta destino (solo transferencia)
     """
     ahora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     es_deposito = tipo == "deposito"
 
     if es_deposito:
-        icono = "💰"
+        icono = "\U0001F4B0"
         asunto = f"Deposito recibido - ${monto:,.0f} - BancoEstado"
         accion = "Deposito"
         detalle = f"Se ha ingresado <strong>${monto:,.0f}</strong> a tu {cuenta}."
+        cuenta_mostrada = cuenta
     else:
-        icono = "💸"
+        icono = "\U0001F4B8"
         asunto = f"Transferencia realizada - ${monto:,.0f} - BancoEstado"
         accion = "Transferencia"
-        detalle = (
-            f"Se ha realizado una transferencia por <strong>${monto:,.0f}</strong> "
-            f"desde {cuenta}"
-        )
-        if rut_destino:
-            detalle += f" a RUT {rut_destino}"
-        detalle += "."
+        misma_persona = rut_origen and rut_destino and rut_origen == rut_destino
+        if misma_persona and cuenta_destino:
+            detalle = (
+                f"Se ha transferido <strong>${monto:,.0f}</strong> "
+                f"desde {cuenta} a {cuenta_destino}."
+            )
+            cuenta_mostrada = f"{cuenta} \u2192 {cuenta_destino}"
+        elif cuenta_destino and rut_destino:
+            detalle = (
+                f"Se ha transferido <strong>${monto:,.0f}</strong> "
+                f"desde {cuenta} a {cuenta_destino} (RUT {rut_destino})."
+            )
+            cuenta_mostrada = f"{cuenta} \u2192 {cuenta_destino}"
+        elif rut_destino:
+            detalle = (
+                f"Se ha transferido <strong>${monto:,.0f}</strong> "
+                f"desde {cuenta} a RUT {rut_destino}."
+            )
+            cuenta_mostrada = cuenta
+        else:
+            detalle = (
+                f"Se ha transferido <strong>${monto:,.0f}</strong> "
+                f"desde {cuenta}."
+            )
+            cuenta_mostrada = cuenta
 
     cuerpo_html = f"""
-    <html>
-    <head><meta charset="utf-8"></head>
-    <body style="font-family:Arial,sans-serif;color:#333;margin:0;padding:0;background:#f5f5f5;">
-        <div style="max-width:520px;margin:30px auto;">
-            <div style="background:#0066cc;color:white;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
-                <div style="font-size:40px;margin-bottom:8px;">{icono}</div>
-                <h2 style="margin:0;font-size:20px;">{accion}</h2>
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="light">
+        <style>
+            @media screen and (max-width: 480px) {{
+                .email-container {{ max-width: 100% !important; margin: 0 !important; }}
+                .email-header {{ padding: 16px !important; border-radius: 0 !important; }}
+                .email-body {{ padding: 16px !important; border-radius: 0 !important; }}
+                .email-icon {{ font-size: 32px !important; }}
+                .email-title {{ font-size: 18px !important; }}
+                .email-detail {{ font-size: 14px !important; }}
+                .email-table td {{ font-size: 13px !important; }}
+                .email-footer {{ font-size: 11px !important; }}
+            }}
+        </style>
+    </head>
+    <body style="font-family:Arial,Helvetica,sans-serif;color:#333;margin:0;padding:0;background:#f5f5f5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+        <div class="email-container" style="max-width:520px;margin:20px auto;width:100%;">
+            <div class="email-header" style="background:#0066cc;color:white;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
+                <div class="email-icon" style="font-size:40px;margin-bottom:8px;">{icono}</div>
+                <h2 class="email-title" style="margin:0;font-size:20px;">{accion}</h2>
                 <p style="margin:4px 0 0;font-size:14px;opacity:0.9;">BancoEstado - Notificacion automatica</p>
             </div>
-            <div style="background:white;padding:24px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+            <div class="email-body" style="background:white;padding:24px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                 <p style="font-size:16px;margin:0 0 16px;">Hola,</p>
-                <p style="font-size:15px;margin:0 0 20px;line-height:1.5;">{detalle}</p>
+                <p class="email-detail" style="font-size:15px;margin:0 0 20px;line-height:1.5;">{detalle}</p>
                 <div style="background:#f8f9fb;border-radius:8px;padding:16px;margin-bottom:20px;">
-                    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                    <table class="email-table" style="width:100%;border-collapse:collapse;font-size:14px;">
                         <tr>
                             <td style="padding:4px 0;color:#666;">Monto</td>
                             <td style="padding:4px 0;text-align:right;font-weight:bold;">${monto:,.0f}</td>
                         </tr>
                         <tr>
                             <td style="padding:4px 0;color:#666;">Cuenta</td>
-                            <td style="padding:4px 0;text-align:right;">{cuenta}</td>
+                            <td style="padding:4px 0;text-align:right;">{cuenta_mostrada}</td>
                         </tr>
                         <tr>
                             <td style="padding:4px 0;color:#666;">Saldo actual</td>
@@ -128,7 +166,7 @@ def enviar_notificacion_transaccion(tipo: str, monto: float, cuenta: str, saldo_
                         </tr>
                     </table>
                 </div>
-                <p style="font-size:12px;color:#999;margin:0;text-align:center;">
+                <p class="email-footer" style="font-size:12px;color:#999;margin:0;text-align:center;">
                     Este es un mensaje automatico del Asistente BancoEstado.
                 </p>
             </div>
@@ -169,15 +207,33 @@ def generar_reporte_html(sesion: list, beneficio: dict = None) -> str:
         </tr>"""
 
     html = f"""
-    <html>
-    <head><meta charset="utf-8"></head>
-    <body style="font-family:Arial,sans-serif;color:#333;">
-        <div style="max-width:800px;margin:20px auto;border:1px solid #0066cc;border-radius:8px;overflow:hidden;">
-            <div style="background:#0066cc;color:white;padding:20px;text-align:center;">
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="light">
+        <style>
+            @media screen and (max-width: 480px) {{
+                .report-container {{ max-width: 100% !important; margin: 0 !important; border-radius: 0 !important; border: none !important; }}
+                .report-header {{ padding: 16px !important; }}
+                .report-header h2 {{ font-size: 16px !important; }}
+                .report-body {{ padding: 12px !important; }}
+                .report-table {{ font-size: 11px !important; }}
+                .report-table th, .report-table td {{ padding: 4px !important; }}
+                .report-table th:nth-child(4), .report-table td:nth-child(4),
+                .report-table th:nth-child(5), .report-table td:nth-child(5) {{ display: none; }}
+                .report-footer {{ font-size: 10px !important; }}
+            }}
+        </style>
+    </head>
+    <body style="font-family:Arial,Helvetica,sans-serif;color:#333;margin:0;padding:0;background:#f5f5f5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+        <div class="report-container" style="max-width:800px;margin:20px auto;border:1px solid #0066cc;border-radius:8px;overflow:hidden;background:white;width:100%;">
+            <div class="report-header" style="background:#0066cc;color:white;padding:20px;text-align:center;">
                 <h2 style="margin:0;">BancoEstado - Asistente Virtual</h2>
                 <p style="margin:5px 0 0;font-size:14px;">Reporte de Sesion</p>
             </div>
-            <div style="padding:20px;">
+            <div class="report-body" style="padding:20px;">
                 <p><strong>Fecha:</strong> {ahora}</p>
                 <p><strong>Total acciones:</strong> {total_acciones}</p>
                 <p><strong>Exitosas:</strong> {exitosas} | <strong>Fallidas:</strong> {fallidas}</p>
@@ -189,8 +245,8 @@ def generar_reporte_html(sesion: list, beneficio: dict = None) -> str:
                     <p style="margin:2px 0;"><strong>Descuento:</strong> {beneficio.get("descuento","")}</p>
                 </div>
                 '''}
-
-                <table style="width:100%;border-collapse:collapse;margin-top:15px;">
+                <div style="overflow-x:auto;">
+                <table class="report-table" style="width:100%;border-collapse:collapse;margin-top:15px;min-width:300px;">
                     <thead>
                         <tr style="background:#f0f0f0;">
                             <th style="padding:8px;border:1px solid #ddd;">#</th>
@@ -204,7 +260,8 @@ def generar_reporte_html(sesion: list, beneficio: dict = None) -> str:
                         {filas}
                     </tbody>
                 </table>
-                <p style="margin-top:20px;font-size:12px;color:#888;">
+                </div>
+                <p class="report-footer" style="margin-top:20px;font-size:12px;color:#888;">
                     Generado automaticamente por el Asistente BancoEstado.
                 </p>
             </div>

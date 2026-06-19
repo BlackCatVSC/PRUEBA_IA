@@ -5,23 +5,40 @@ Simula los endpoints del sistema cerrado de BancoEstado.
 Proporciona datos realistas para las herramientas del agente.
 
 Arquitectura:
-  - Almacena clientes, cuentas, tarjetas y créditos en memoria
-  - Cada método representa un "endpoint" del banco
+  - Almacena clientes, cuentas, tarjetas y creditos en memoria
+  - Cada metodo representa un "endpoint" del banco
   - Los datos incluyen transacciones simuladas con fechas
+  - Datos sensibles cifrados en disco mediante Fernet (AES-128-CBC)
 """
 
 import json
 import os
 import random
 from datetime import datetime, timedelta
-from typing import Optional
+from cryptography.fernet import Fernet
+from cryptography.fernet import InvalidToken as FernetInvalidToken
 
 MEMORIA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "memoria")
 MEMORIA_ARCHIVO = os.path.join(MEMORIA_DIR, "datos_clientes.json")
+CLAVE_ARCHIVO = os.path.join(MEMORIA_DIR, "clave.key")
+
+os.makedirs(MEMORIA_DIR, exist_ok=True)
+
+
+def _obtener_cipher() -> Fernet:
+    """Obtiene o genera la clave de cifrado Fernet para datos en reposo."""
+    if os.path.exists(CLAVE_ARCHIVO):
+        with open(CLAVE_ARCHIVO, "rb") as f:
+            clave = f.read()
+    else:
+        clave = Fernet.generate_key()
+        with open(CLAVE_ARCHIVO, "wb") as f:
+            f.write(clave)
+    return Fernet(clave)
 
 
 class BancoEstadoAPI:
-    """Simulación del backend bancario de BancoEstado."""
+    """Simulacion del backend bancario de BancoEstado."""
 
     def __init__(self, rut: str = "12.345.678-9"):
         self.rut = rut
@@ -29,11 +46,22 @@ class BancoEstadoAPI:
         self._cargar_o_inicializar()
 
     def _cargar_o_inicializar(self):
-        """Carga datos desde JSON si existe, sino inicializa datos de prueba."""
+        """Carga datos desde JSON cifrado si existe, sino inicializa datos de prueba.
+        Soporta migracion transparente desde archivo en texto plano a cifrado."""
         if os.path.exists(MEMORIA_ARCHIVO):
+            try:
+                cipher = _obtener_cipher()
+                with open(MEMORIA_ARCHIVO, "rb") as f:
+                    datos_cifrados = f.read()
+                    datos_json = cipher.decrypt(datos_cifrados).decode("utf-8")
+                    self._clientes = json.loads(datos_json)
+                return
+            except (FernetInvalidToken, Exception):
+                pass
             try:
                 with open(MEMORIA_ARCHIVO, "r", encoding="utf-8") as f:
                     self._clientes = json.load(f)
+                self._guardar()
                 return
             except (json.JSONDecodeError, Exception):
                 pass
@@ -41,10 +69,13 @@ class BancoEstadoAPI:
         self._guardar()
 
     def _guardar(self):
-        """Persiste el estado actual en JSON."""
+        """Persiste el estado actual en JSON cifrado con Fernet."""
         os.makedirs(MEMORIA_DIR, exist_ok=True)
-        with open(MEMORIA_ARCHIVO, "w", encoding="utf-8") as f:
-            json.dump(self._clientes, f, indent=2, ensure_ascii=False)
+        cipher = _obtener_cipher()
+        datos_json = json.dumps(self._clientes, indent=2, ensure_ascii=False)
+        datos_cifrados = cipher.encrypt(datos_json.encode("utf-8"))
+        with open(MEMORIA_ARCHIVO, "wb") as f:
+            f.write(datos_cifrados)
 
     def _init_datos(self):
         """Inicializa datos de prueba realistas."""
@@ -173,7 +204,7 @@ class BancoEstadoAPI:
         }
         self._guardar()
 
-    def _get_cliente(self, rut: str) -> tuple:
+    def _get_cliente(self, rut: str) -> dict:
         cliente = self._clientes.get(rut)
         if not cliente:
             raise ValueError(f"Cliente con RUT {rut} no encontrado")
@@ -462,7 +493,8 @@ class BancoEstadoAPI:
                 enviar_notificacion_transaccion("transferencia", monto, tipo_cuenta_origen,
                                                  cuenta_origen["saldo"],
                                                  destino=email_origen,
-                                                 rut_origen=rut_origen, rut_destino=rut_destino)
+                                                 rut_origen=rut_origen, rut_destino=rut_destino,
+                                                 cuenta_destino=tipo_cuenta_destino)
             if email_destino and email_destino != email_origen:
                 enviar_notificacion_transaccion("deposito", monto, tipo_cuenta_destino,
                                                  cuenta_destino["saldo"],

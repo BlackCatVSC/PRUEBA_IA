@@ -94,6 +94,12 @@ function updateChatState() {
 
     const sidebarLogout = document.querySelector('#sidebar .mt-auto button');
     if (sidebarLogout) sidebarLogout.style.display = loggedIn ? 'flex' : 'none';
+
+    const sidebarLinks = document.getElementById('sidebar-links');
+    if (sidebarLinks) sidebarLinks.style.display = loggedIn ? '' : 'none';
+
+    const newChatBtn = document.querySelector('#sidebar button[onclick=\"newChat()\"]');
+    if (newChatBtn) newChatBtn.style.display = loggedIn ? '' : 'none';
 }
 
 function openLogin() {

@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import uuid
 import sqlite3
@@ -25,12 +26,12 @@ else:
 
 from herramientas.herramientas_bancoestado import TOOL_LIST
 from herramientas.planificador import Planificador, Orquestador
-from herramientas.seguridad import OrquestadorSeguridad, DetectorPII
+from herramientas.seguridad import OrquestadorSeguridad, DetectorPII, SanitizadorEntrada
 
 TOOL_MAP = {tool.name: tool for tool in TOOL_LIST}
 planificador = Planificador()
 orquestador = Orquestador(TOOL_MAP)
-seguridad = OrquestadorSeguridad()
+seguridad = OrquestadorSeguridad(llm=llm)
 
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -106,31 +107,46 @@ def _send_login_email(email: str, name: str, rut: str = "12.345.678-9"):
 
         ahora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         cuerpo_html = f"""
-        <html>
-        <head><meta charset="utf-8"></head>
-        <body style="font-family:Arial,sans-serif;color:#333;margin:0;padding:0;background:#f5f5f5;">
-            <div style="max-width:520px;margin:30px auto;">
-                <div style="background:#0066cc;color:white;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light">
+            <style>
+                @media screen and (max-width: 480px) {{
+                    .welcome-container {{ max-width: 100% !important; margin: 0 !important; }}
+                    .welcome-header {{ padding: 16px !important; border-radius: 0 !important; }}
+                    .welcome-header h2 {{ font-size: 18px !important; }}
+                    .welcome-body {{ padding: 16px !important; border-radius: 0 !important; }}
+                    .welcome-row span {{ font-size: 13px !important; }}
+                    .welcome-footer {{ font-size: 11px !important; }}
+                }}
+            </style>
+        </head>
+        <body style="font-family:Arial,Helvetica,sans-serif;color:#333;margin:0;padding:0;background:#f5f5f5;-webkit-text-size-adjust:100%;">
+            <div class="welcome-container" style="max-width:520px;margin:20px auto;width:100%;">
+                <div class="welcome-header" style="background:#0066cc;color:white;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
                     <h2 style="margin:0;font-size:22px;">Bienvenido, {name}!</h2>
                     <p style="margin:4px 0 0;font-size:14px;opacity:0.9;">Has iniciado sesion en BancoEstado</p>
                 </div>
-                <div style="background:white;padding:24px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                <div class="welcome-body" style="background:white;padding:24px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                     <p style="font-size:16px;margin:0 0 16px;">Resumen de tus cuentas:</p>
                     <div style="background:#f8f9fb;border-radius:8px;padding:16px;margin-bottom:16px;">
-                        <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+                        <div class="welcome-row" style="display:flex;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;">
                             <span>CuentaRUT</span>
                             <span style="font-weight:bold;">${cr['saldo']:,}</span>
                         </div>
-                        <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+                        <div class="welcome-row" style="display:flex;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;">
                             <span>Cuenta de Ahorros</span>
                             <span style="font-weight:bold;">${ca['saldo']:,}</span>
                         </div>
-                        <div style="border-top:1px solid #ddd;padding-top:12px;display:flex;justify-content:space-between;">
+                        <div style="border-top:1px solid #ddd;padding-top:12px;display:flex;justify-content:space-between;flex-wrap:wrap;">
                             <span style="font-weight:bold;">Total en cuentas</span>
                             <span style="font-weight:bold;color:#0066cc;">${total:,}</span>
                         </div>
                     </div>
-                    <p style="font-size:12px;color:#999;margin:0;text-align:center;">
+                    <p class="welcome-footer" style="font-size:12px;color:#999;margin:0;text-align:center;">
                         Inicio de sesion: {ahora}<br>
                         Asistente Virtual BancoEstado
                     </p>
@@ -379,23 +395,32 @@ def chat():
     session = sessions[session_id]
     session["ultima_actividad"] = datetime.now().isoformat()
 
-    from herramientas.herramientas_bancoestado import api as tools_api
-    tools_api.rut = session.get("rut", "12.345.678-9")
+    from herramientas.herramientas_bancoestado import api as tools_api, set_rut_actual
+    set_rut_actual(session.get("rut", "12.345.678-9"))
 
     mensaje_procesado = validacion["mensaje_sanitizado"]
 
     if MODO_DEMO:
-        response = procesar_demo(mensaje_procesado, session)
+        try:
+            response = procesar_demo(mensaje_procesado, session)
+        except Exception as e:
+            print(f"[ERROR] Demo exception: {type(e).__name__}: {str(e)[:200]}")
+            response = "Lo siento, ocurrio un error al procesar tu consulta en modo demo. Por favor intenta de nuevo."
     else:
         try:
             result = session["executor"].invoke({"input": mensaje_procesado})
             response = result["output"]
         except Exception as e:
             error_str = str(e)
+            print(f"[ERROR] Chat exception: {type(e).__name__}: {error_str[:300]}")
             if "content_filter" in error_str or "ResponsibleAIPolicyViolation" in error_str:
-                response = "Lo siento, no puedo procesar esa solicitud. Por razones de seguridad y políticas de contenido, no puedo dar respuesta a este tipo de consultas. Si necesitas ayuda con productos o servicios de BancoEstado, estoy aqui para orientarte."
+                response = "Lo siento, no puedo procesar esa solicitud. Por razones de seguridad y politicas de contenido, no puedo dar respuesta a este tipo de consultas. Si necesitas ayuda con productos o servicios de BancoEstado, estoy aqui para orientarte."
+            elif "RateLimitError" in type(e).__name__:
+                response = "El servicio esta recibiendo demasiadas solicitudes en este momento. Por favor espera unos segundos y vuelve a intentarlo."
+            elif "no encontrad" in error_str.lower() or "not found" in error_str.lower():
+                response = "Lo siento, no se encontro la cuenta o el cliente especificado. Verifica que tengas las cuentas necesarias para esta operacion."
             else:
-                response = f"Lo siento, ocurrio un error al procesar tu consulta. Por favor intenta de nuevo o reformula tu pregunta."
+                response = f"Lo siento, ocurrio un error al procesar tu consulta. Error: {type(e).__name__}. Por favor intenta de nuevo."
 
     validacion_salida = seguridad.validar_salida(response)
     if validacion_salida["tiene_pii"]:
@@ -420,7 +445,10 @@ def api_cuentas():
         return jsonify({"error": rate_check["motivo"]}), 429
 
     from herramientas.bancoestado_api import BancoEstadoAPI
-    rut = request.args.get("rut", "12.345.678-9")
+    rut_raw = request.args.get("rut", "12.345.678-9")
+    rut = SanitizadorEntrada.sanitizar(rut_raw)[:30]
+    if not re.match(r'^\d{1,2}\.?\d{3}\.?\d{3}[-]?[\dkK]$', rut):
+        return jsonify({"error": "RUT invalido"}), 400
     api = BancoEstadoAPI(rut=rut)
     try:
         cliente_data = api._get_cliente(rut)
@@ -530,6 +558,10 @@ def api_login():
 
 @app.route("/health", methods=["GET"])
 def health():
+    rate_key = f"health:{request.remote_addr or 'unknown'}"
+    rate_check = seguridad.rate_limiter.permitir(rate_key)
+    if not rate_check["permitido"]:
+        return jsonify({"error": rate_check["motivo"]}), 429
     return jsonify({
         "status": "ok",
         "modo": "demo" if MODO_DEMO else "gpt-4o",
@@ -539,6 +571,10 @@ def health():
 
 @app.route("/api/security/metrics", methods=["GET"])
 def security_metrics():
+    rate_key = f"secmetrics:{request.remote_addr or 'unknown'}"
+    rate_check = seguridad.rate_limiter.permitir(rate_key)
+    if not rate_check["permitido"]:
+        return jsonify({"error": rate_check["motivo"]}), 429
     return jsonify({
         "success": True,
         "metricas": seguridad.obtener_metricas(),
@@ -547,6 +583,8 @@ def security_metrics():
 
 if __name__ == "__main__":
     init_db()
+    debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
     print(f"[OK] Servidor iniciado en http://localhost:5000")
     print(f"[OK] Modo: {'DEMO (sin GPT-4o)' if MODO_DEMO else 'GPT-4o'}")
-    app.run(port=5000, debug=True)
+    print(f"[OK] Debug: {'ON' if debug_mode else 'OFF'}")
+    app.run(port=5000, debug=debug_mode)

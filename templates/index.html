@@ -102,14 +102,14 @@
 
 <!-- Login Modal -->
 <div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 transition-opacity" id="login-modal-overlay" onclick="closeLogin()">
-  <div class="bg-surface rounded-2xl w-full max-w-[400px] mx-4 p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+  <div class="bg-surface rounded-2xl w-full max-w-[min(400px,92vw)] mx-2 sm:mx-4 p-6 sm:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
     <div class="flex justify-end -mt-2 -mr-2">
       <button class="p-1 rounded-full hover:bg-surface-container-high transition-colors" onclick="closeLogin()">
         <span class="material-symbols-outlined text-on-surface-variant">close</span>
       </button>
     </div>
     <div class="flex flex-col items-center -mt-2">
-      <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+      <div class="w-14 h-14 sm:w-16 sm:h-16 bg-primary rounded-2xl flex items-center justify-center mb-4 shadow-lg">
         <span class="material-symbols-outlined text-white text-[36px]" style="font-variation-settings: 'FILL' 1;">account_balance</span>
       </div>
       <h2 class="text-headline-md font-bold text-on-surface text-center">BancoEstado</h2>
@@ -144,7 +144,7 @@
 
 <!-- Logout Confirm Modal -->
 <div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 transition-opacity" id="logout-modal-overlay" onclick="closeLogout()">
-  <div class="bg-surface rounded-2xl w-full max-w-[340px] mx-4 p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-center" onclick="event.stopPropagation()">
+  <div class="bg-surface rounded-2xl w-full max-w-[min(340px,88vw)] mx-2 sm:mx-4 p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-center" onclick="event.stopPropagation()">
     <div class="w-14 h-14 bg-error-container rounded-full flex items-center justify-center mx-auto mb-4">
       <span class="material-symbols-outlined text-error text-[32px]">logout</span>
     </div>
@@ -159,14 +159,14 @@
 
 <!-- Register Modal -->
 <div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 transition-opacity" id="register-modal-overlay" onclick="closeRegister()">
-  <div class="bg-surface rounded-2xl w-full max-w-[400px] mx-4 p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+  <div class="bg-surface rounded-2xl w-full max-w-[min(400px,92vw)] mx-2 sm:mx-4 p-6 sm:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
     <div class="flex justify-end -mt-2 -mr-2">
       <button class="p-1 rounded-full hover:bg-surface-container-high transition-colors" onclick="closeRegister()">
         <span class="material-symbols-outlined text-on-surface-variant">close</span>
       </button>
     </div>
     <div class="flex flex-col items-center -mt-2">
-      <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+      <div class="w-14 h-14 sm:w-16 sm:h-16 bg-primary rounded-2xl flex items-center justify-center mb-4 shadow-lg">
         <span class="material-symbols-outlined text-white text-[36px]" style="font-variation-settings: 'FILL' 1;">person_add</span>
       </div>
       <h2 class="text-headline-md font-bold text-on-surface text-center">Crear cuenta</h2>
@@ -216,7 +216,7 @@
 <!-- App Container -->
 <div id="app-container" class="flex flex-col h-full overflow-hidden">
 <!-- TopAppBar -->
-<header class="bg-primary-container flex-shrink-0 z-40 flex justify-between items-center h-16 px-margin-mobile md:px-gutter shadow-md">
+<header class="bg-primary-container flex-shrink-0 z-40 flex justify-between items-center h-14 sm:h-16 px-margin-mobile md:px-gutter shadow-md">
 <div class="flex items-center gap-4">
 <button class="text-on-primary hover:bg-white/10 p-2 rounded-full transition-transform active:scale-95" onclick="toggleSidebar()">
 <span class="material-symbols-outlined text-[32px]">menu</span>
@@ -234,8 +234,8 @@
 </div>
 </header>
 <!-- SideNavBar -->
-<aside class="fixed left-0 top-0 w-[280px] h-full z-40 flex flex-col bg-surface-container-low shadow-2xl sidebar-transition -translate-x-full pt-16" id="sidebar">
-<div class="p-6">
+<aside class="fixed left-0 top-0 w-[min(280px,85vw)] h-full z-40 flex flex-col bg-surface-container-low shadow-2xl sidebar-transition -translate-x-full pt-14 sm:pt-16" id="sidebar">
+<div class="p-6 overflow-y-auto flex-1">
 <div class="flex flex-col gap-1 mb-8">
 <h2 class="text-headline-sm font-headline-sm font-bold text-primary">Hola, Juan Perez</h2>
 <p class="text-body-md font-body-md text-on-surface-variant">En que puedo ayudarte?</p>
@@ -301,7 +301,7 @@
 </div>
 </nav>
 </div>
-<div class="mt-auto p-4 border-t border-outline-variant/30">
+<div class="mt-auto p-4 border-t border-outline-variant/30 flex-shrink-0">
 <button class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-colors w-full rounded-lg" onclick="logout()">
 <span class="material-symbols-outlined">logout</span>
                 Cerrar Sesion
@@ -313,16 +313,16 @@
 <!-- Main Content -->
         <main class="relative flex-grow flex-1 flex flex-col items-center overflow-hidden w-full">
 <!-- Chat Messages -->
-<div class="w-full max-w-[800px] flex-1 overflow-y-auto px-4 py-6 space-y-4" id="chat-messages">
+<div class="w-full max-w-[800px] flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4" id="chat-messages">
   <!-- Welcome -->
   <div class="flex flex-col items-center text-center py-8" id="welcome-section">
     <div class="relative flex flex-col items-center mb-3">
-      <div class="absolute -top-24 left-1/2 -translate-x-1/2 md:left-full md:-translate-x-10 md:top-0 w-64 p-5 bg-white rounded-2xl shadow-xl border border-outline-variant/20 text-left z-10">
+      <div class="absolute -top-20 sm:-top-24 left-1/2 -translate-x-1/2 md:left-full md:-translate-x-10 md:top-0 w-56 sm:w-64 p-4 sm:p-5 bg-white rounded-2xl shadow-xl border border-outline-variant/20 text-left z-10">
         <p class="text-body-lg font-bold text-primary mb-1" id="greeting-bubble">Hola, Juan Perez!</p>
         <p class="text-body-md text-on-surface-variant">En que puedo ayudarte hoy?</p>
         <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 md:left-0 md:-left-2 md:top-1/2 md:-translate-y-1/2 w-4 h-4 bg-white border-b border-l border-outline-variant/20 rotate-45 md:-rotate-45"></div>
       </div>
-      <div class="floating-anim relative w-48 h-48 md:w-72 md:h-72">
+      <div class="floating-anim relative w-32 h-32 sm:w-48 sm:h-48 md:w-72 md:h-72">
         <img alt="Asistente Virtual" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3JnTSxU3qagzTbEqeQpRnKwT5r2JjODuvITqGcD1G-0LC55hNZZ51X9aFyhkMd1GSSfWHBwX6b6duOTmUg1XsF3K2FoRGYPgM_QKka39DUMj3IOhFbfRpnNxs7RTT83Nfk_qReEiW7rX1kqJKPpvepD0Y5IXtZT_aOIVN9hhkNK0oM94gAI5zPCtbxzLamr8u2k0mGZAsQQ9IES-D4gps5J648jEU5XG8NM2zJYg7Q6BJnWT9Zfy7YQX6_zRC9xKWYiNPJFfSyo0">
       </div>
     </div>
@@ -330,20 +330,20 @@
 </div>
 
 <!-- Input Section -->
-<div class="w-full flex-shrink-0 bg-background/95 backdrop-blur-sm pb-4 pt-2 px-4 md:px-gutter border-t border-outline-variant/10" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
+<div class="w-full flex-shrink-0 bg-background/95 backdrop-blur-sm pb-3 sm:pb-4 pt-2 px-3 sm:px-4 md:px-gutter border-t border-outline-variant/10" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
 <div class="w-full max-w-[640px] mx-auto relative group">
-<div class="flex items-center bg-white rounded-full px-6 py-4 chat-input-shadow border border-outline-variant/30 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-300">
-<span class="material-symbols-outlined text-primary mr-4" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
-<input class="flex-grow bg-transparent border-none focus:ring-0 text-body-lg text-on-surface placeholder:text-on-surface-variant/50 outline-none" placeholder="Escribe aca tu consulta..." type="text" id="chat-input">
-<button class="bg-primary text-on-primary w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-90 hover:scale-105 hover:shadow-lg ml-2" onclick="sendMessage()" id="send-btn">
-<span class="material-symbols-outlined text-[24px]">send</span>
+<div class="flex items-center bg-white rounded-full px-4 sm:px-6 py-3 sm:py-4 chat-input-shadow border border-outline-variant/30 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-300">
+<span class="material-symbols-outlined text-primary mr-3 sm:mr-4" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<input class="flex-grow bg-transparent border-none focus:ring-0 text-sm sm:text-body-lg text-on-surface placeholder:text-on-surface-variant/50 outline-none" placeholder="Escribe aca tu consulta..." type="text" id="chat-input">
+<button class="bg-primary text-on-primary w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all active:scale-90 hover:scale-105 hover:shadow-lg ml-2" onclick="sendMessage()" id="send-btn">
+<span class="material-symbols-outlined text-[20px] sm:text-[24px]">send</span>
 </button>
 </div>
 <!-- Quick Action Chips -->
-<div class="flex flex-wrap justify-center gap-2 mt-2 quick-chips">
-<button class="px-4 py-2 rounded-full border border-primary text-primary text-body-md font-semibold hover:bg-primary hover:text-on-primary transition-all shadow-sm active:scale-95 text-sm" onclick="quickMessage('Como puedo sacar la CuentaRUT?')">Como sacar la CuentaRUT</button>
-<button class="px-4 py-2 rounded-full border border-primary text-primary text-body-md font-semibold hover:bg-primary hover:text-on-primary transition-all shadow-sm active:scale-95 text-sm" onclick="quickMessage('Que hago si pierdo mi plastico?')">Que hago si pierdo mi plastico?</button>
-<button class="px-4 py-2 rounded-full border border-primary text-primary text-body-md font-semibold hover:bg-primary hover:text-on-primary transition-all shadow-sm active:scale-95 text-sm" onclick="quickMessage('Que condiciones debo cumplir para sacar una tarjeta de credito?')">Que condiciones debo cumplir para sacar una tarjeta de credito?</button>
+<div class="flex flex-wrap justify-center gap-1.5 sm:gap-2 mt-2 quick-chips">
+<button class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-primary text-primary text-xs sm:text-sm font-semibold hover:bg-primary hover:text-on-primary transition-all shadow-sm active:scale-95 whitespace-nowrap" onclick="quickMessage('Como puedo sacar la CuentaRUT?')">Como sacar la CuentaRUT</button>
+<button class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-primary text-primary text-xs sm:text-sm font-semibold hover:bg-primary hover:text-on-primary transition-all shadow-sm active:scale-95 whitespace-nowrap" onclick="quickMessage('Que hago si pierdo mi plastico?')">Que hago si pierdo mi plastico?</button>
+<button class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-primary text-primary text-xs sm:text-sm font-semibold hover:bg-primary hover:text-on-primary transition-all shadow-sm active:scale-95 whitespace-nowrap" onclick="quickMessage('Que condiciones debo cumplir para sacar una tarjeta de credito?')">Requisitos tarjeta de credito</button>
 </div>
 </div>
 </div>

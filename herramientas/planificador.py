@@ -314,7 +314,7 @@ class Orquestador:
                 tipo_cuenta = "CuentaAhorros" if "ahorro" in consulta_lower else "CuentaRUT"
                 try:
                     from .herramientas_bancoestado import api as api_bee
-                    card_data = json.loads(api_bee.buscar_tarjeta_por_cuenta("12.345.678-9", tipo_cuenta))
+                    card_data = json.loads(api_bee.buscar_tarjeta_por_cuenta(api_bee.rut, tipo_cuenta))
                     if card_data.get("success"):
                         args[name] = card_data["numero"]
                     else:
@@ -329,7 +329,14 @@ class Orquestador:
                     args[name] = "CuentaRUT"
             elif name == "rut_destino":
                 match_rut = re.search(r'\b(\d{1,2}\.?\d{3}\.?\d{3}[-]?[\dkK])\b', consulta)
-                args[name] = match_rut.group(1) if match_rut else "12.345.678-9"
+                if match_rut:
+                    args[name] = match_rut.group(1)
+                else:
+                    try:
+                        from .herramientas_bancoestado import api as api_bee
+                        args[name] = api_bee.rut
+                    except Exception:
+                        args[name] = "12.345.678-9"
             elif name == "tipo_cuenta_destino":
                 consulta_lower = consulta.lower()
                 if "ahorro" in consulta_lower and ("a " in consulta_lower or "para" in consulta_lower or "destino" in consulta_lower):
