@@ -1,0 +1,20 @@
+[Unit]
+Description=BancoEstado Nginx Reverse Proxy
+After=network-online.target bancoestado.service
+Wants=network-online.target bancoestado.service
+
+[Service]
+Type=forking
+ExecStartPre=/usr/sbin/nginx -t
+ExecStart=/usr/sbin/nginx
+ExecReload=/usr/sbin/nginx -s reload
+ExecStop=/usr/sbin/nginx -s quit
+PIDFile=/var/run/nginx.pid
+
+Restart=on-failure
+RestartSec=5
+
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

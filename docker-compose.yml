@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bancoestado-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITHUB_BASE_URL=${GITHUB_BASE_URL:-https://models.inference.ai.azure.com}
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-false}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-default}
+      - EMAIL_FROM=${EMAIL_FROM:-}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
+      - EMAIL_TO=${EMAIL_TO:-}
+      - LLM_MODELO_DEFECTO=${LLM_MODELO_DEFECTO:-gpt-4o}
+      - LLM_MODELO_POTENTE=${LLM_MODELO_POTENTE:-gpt-4o}
+      - LLM_MODELO_LIGERO=${LLM_MODELO_LIGERO:-gpt-4o-mini}
+      - LLM_COSTO_POR_1K=${LLM_COSTO_POR_1K:-0.00075}
+      - CACHE_UMBRAL_SIMILITUD=${CACHE_UMBRAL_SIMILITUD:-0.75}
+      - CACHE_TTL_SEGUNDOS=${CACHE_TTL_SEGUNDOS:-3600}
+      - PROCESADOR_TAMANO_LOTE=${PROCESADOR_TAMANO_LOTE:-5}
+      - ANOMALIAS_VENTANA=${ANOMALIAS_VENTANA:-20}
+      - ANOMALIAS_FACTOR_SPIKE=${ANOMALIAS_FACTOR_SPIKE:-2.5}
+      - ANOMALIAS_UMBRAL_ERROR_PCT=${ANOMALIAS_UMBRAL_ERROR_PCT:-20.0}
+      - ANOMALIAS_UMBRAL_CACHE_PCT=${ANOMALIAS_UMBRAL_CACHE_PCT:-50.0}
+      - FLASK_DEBUG=0
+      - OBS_TRUNCAR_ENTRADA=${OBS_TRUNCAR_ENTRADA:-100}
+      - OBS_TRUNCAR_ERROR=${OBS_TRUNCAR_ERROR:-120}
+    volumes:
+      - app-data:/app/memoria
+      - app-logs:/app/logs
+      - app-db:/app/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - bancoestado-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: bancoestado-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/bancoestado.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - bancoestado-net
+
+volumes:
+  app-data:
+    driver: local
+  app-logs:
+    driver: local
+  app-db:
+    driver: local
+
+networks:
+  bancoestado-net:
+    driver: bridge

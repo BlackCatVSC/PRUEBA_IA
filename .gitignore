@@ -215,3 +215,8 @@ memoria/datos_clientes.json
 
 # Exam materials
 RA2-Extraccion/
+
+# Deployment artifacts
+logs/
+*.log
+!nginx/bancoestado.conf

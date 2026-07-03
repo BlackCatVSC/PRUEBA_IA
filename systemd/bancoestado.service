@@ -1,0 +1,56 @@
+[Unit]
+Description=Asistente Virtual BancoEstado con IA
+Documentation=https://github.com/BlackCatVSC/PRUEBA_IA
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=bancoestado
+Group=bancoestado
+WorkingDirectory=/opt/bancoestado
+EnvironmentFile=-/opt/bancoestado/.env
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONDONTWRITEBYTECODE=1"
+Environment="FLASK_DEBUG=0"
+
+ExecStartPre=/bin/mkdir -p /opt/bancoestado/logs /opt/bancoestado/memoria /opt/bancoestado/data
+ExecStartPre=/bin/sh -c '/opt/bancoestado/.venv/bin/python -c "from app import init_db; init_db()" || true'
+ExecStart=/opt/bancoestado/.venv/bin/gunicorn \
+    --bind 127.0.0.1:5000 \
+    --preload \
+    --workers 2 \
+    --worker-class gthread \
+    --threads 2 \
+    --timeout 120 \
+    --keep-alive 5 \
+    --max-requests 1000 \
+    --max-requests-jitter 50 \
+    --access-logfile /opt/bancoestado/logs/access.log \
+    --error-logfile /opt/bancoestado/logs/error.log \
+    --log-level info \
+    app:app
+
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+
+Restart=always
+RestartSec=10
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+ReadWritePaths=/opt/bancoestado/logs /opt/bancoestado/memoria /opt/bancoestado/data
+
+LimitNOFILE=65536
+LimitNPROC=4096
+
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

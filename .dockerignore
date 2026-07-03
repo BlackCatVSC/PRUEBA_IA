@@ -1,0 +1,70 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[codz]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sensible
+.env
+*.db
+*.sqlite
+*.sqlite3
+memoria/clave.key
+memoria/datos_clientes.json
+
+# Logs
+*.log
+logs/
+server_err.log
+server_out.log
+stderr.txt
+stdout.txt
+stderr_*.txt
+stdout_*.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+.docker/
+
+# Testing
+test_*.py
+tests/
+_debug_*.py
+
+# Docs
+README*.md
+FLUJO_USO.md
+LICENSE
+Diagrama.png
+
+# Exam materials
+RA2-Extraccion/
+
+# Deploy scripts (not needed in image)
+scripts/
+systemd/
+nginx/ssl/

@@ -109,7 +109,7 @@ LOCKOUT_MINUTOS = 15
 MAX_AUTH_TOKEN_AGE_HORAS = 24
 
 # ─── Base de datos de usuarios ────────────────────────────────
-DB_PATH = os.path.join(os.path.dirname(__file__), "usuarios.db")
+DB_PATH = os.path.join(os.path.dirname(__file__), "data", "usuarios.db")
 
 
 def init_db():
@@ -880,7 +880,11 @@ def informe_tecnico():
 if __name__ == "__main__":
     init_db()
     debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
-    web_log.info("Servidor iniciado en http://localhost:5000")
+    host = os.environ.get("FLASK_HOST", "127.0.0.1")
+    port = int(os.environ.get("FLASK_PORT", "5000"))
+    web_log.info("Servidor iniciado en http://%s:%s", host, port)
     web_log.info("Modo: %s", "DEMO (sin GPT-4o)" if MODO_DEMO else "GPT-4o")
     web_log.info("Debug: %s", "ON" if debug_mode else "OFF")
-    app.run(port=5000, debug=debug_mode)
+    if not debug_mode:
+        web_log.info("ADVERTENCIA: Servidor de desarrollo. Para produccion usar gunicorn.")
+    app.run(host=host, port=port, debug=debug_mode)
