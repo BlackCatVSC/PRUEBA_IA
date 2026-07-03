@@ -14,10 +14,17 @@ import os
 import json
 import unicodedata
 import re
-from dotenv import load_dotenv
 from datetime import datetime
+from dotenv import load_dotenv
 
 load_dotenv()
+
+from herramientas.observability import AgenteObservable, get_logger
+
+from herramientas.config import (MODELO_POR_DEFECTO, CACHE_UMBRAL_SIMILITUD,
+                                 CACHE_TTL_SEGUNDOS)
+
+cli_log = get_logger("cli.bancoestado")
 
 # Mapear variables para LangChain
 os.environ["OPENAI_API_BASE"] = os.environ.get("GITHUB_BASE_URL", "https://models.inference.ai.azure.com")
@@ -26,8 +33,8 @@ os.environ["LANGCHAIN_TRACING_V2"] = os.environ.get("LANGSMITH_TRACING", "false"
 
 # Check config
 if not os.environ.get("GITHUB_TOKEN"):
-    print("[!] GITHUB_TOKEN no configurado. Revisa tu archivo .env")
-    print("[!] El agente usara modo demostracion con datos simulados (sin LLM).")
+    cli_log.warning("GITHUB_TOKEN no configurado. Revisa tu archivo .env")
+    cli_log.warning("El agente usara modo demostracion con datos simulados (sin LLM).")
     MODO_DEMO = True
 else:
     MODO_DEMO = False
@@ -39,12 +46,12 @@ else:
 from langchain_openai import ChatOpenAI
 
 if not MODO_DEMO:
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    llm = ChatOpenAI(model=MODELO_POR_DEFECTO, temperature=0)
     try:
         test = llm.invoke("Hola")
-        print("[OK] LLM configurado con GPT-4o")
+        cli_log.info("LLM configurado con GPT-4o")
     except Exception as e:
-        print(f"[!] Error LLM: {e}. Usando modo demo.")
+        cli_log.error("Error LLM: %s. Usando modo demo.", e)
         llm = None
         MODO_DEMO = True
 else:
@@ -59,6 +66,7 @@ from herramientas.herramientas_bancoestado import TOOL_LIST
 # Mapa nombre -> funcion para busqueda rapida
 TOOL_MAP = {tool.name: tool for tool in TOOL_LIST}
 print(f"[OK] {len(TOOL_LIST)} herramientas BancoEstado cargadas")
+cli_log.info("%d herramientas cargadas", len(TOOL_LIST))
 
 # =============================================
 # 2b. SEGURIDAD (RA3 - IL3.3)
@@ -66,7 +74,28 @@ print(f"[OK] {len(TOOL_LIST)} herramientas BancoEstado cargadas")
 
 from herramientas.seguridad import OrquestadorSeguridad
 
+# ─── LANGMSITH ─────────────────────────────────────────────────
+from herramientas.langsmith_config import (LangSmithConfig, obtener_estado_configuracion,
+                                           LANGSMITH_PROJECT, traceable_si_habilitado,
+                                           registrar_metricas_langsmith)
+
+if LangSmithConfig.habilitado():
+    cli_log.info("LangSmith monitoreo activo - Proyecto: %s", LANGSMITH_PROJECT)
+    langsmith_callbacks_agente = LangSmithConfig.get_callbacks(
+        tags=["cliente", "agente_bancoestado"],
+    )
+else:
+    cli_log.info("LangSmith monitoreo deshabilitado (sin API key o tracing=false)")
+    langsmith_callbacks_agente = []
+
 seguridad = OrquestadorSeguridad(llm=llm if not MODO_DEMO else None)
+
+# ─── OBSERVABILIDAD (IL3.1) ─────────────────────────────────────
+agente_obs = AgenteObservable("bancoestado-cli")
+
+# ─── CACHE SEMANTICO (IL3.2) ────────────────────────────────────
+from herramientas.cache_semantico import CacheSemantico, estimar_tokens
+cache_cli = CacheSemantico(umbral_similitud=CACHE_UMBRAL_SIMILITUD, ttl_segundos=CACHE_TTL_SEGUNDOS)
 
 # =============================================
 # 3. PLANIFICADOR Y ORQUESTADOR (IL2.3)
@@ -141,6 +170,7 @@ if not MODO_DEMO:
         memory=buffer_memory,
         verbose=False,
         max_iterations=5,
+        callbacks=langsmith_callbacks_agente if langsmith_callbacks_agente else None,
     )
 
     executor_window = AgentExecutor(
@@ -149,6 +179,7 @@ if not MODO_DEMO:
         memory=window_memory,
         verbose=False,
         max_iterations=5,
+        callbacks=langsmith_callbacks_agente if langsmith_callbacks_agente else None,
     )
 
     executor_summary = AgentExecutor(
@@ -157,6 +188,7 @@ if not MODO_DEMO:
         memory=summary_memory,
         verbose=False,
         max_iterations=5,
+        callbacks=langsmith_callbacks_agente if langsmith_callbacks_agente else None,
     )
 
 # =============================================
@@ -355,6 +387,7 @@ def flujo_actualizar_saldo_interactivo() -> bool:
 # 7. PROCESAMIENTO DE CONSULTAS
 # =============================================
 
+@traceable_si_habilitado(name="procesar_demo", tags=["cli", "demo"])
 def procesar_consulta_modo_demo(consulta: str) -> str:
     """Procesa consultas en modo demo (sin LLM) usando planificador."""
     plan = planificador.crear_plan(consulta)
@@ -375,7 +408,7 @@ def procesar_consulta_modo_demo(consulta: str) -> str:
         registrar_accion(consulta, "ninguna", False, msg)
         return msg
 
-    resultados = orquestador.ejecutar_plan(consulta)
+    resultados = agente_obs.medir_demo(orquestador.ejecutar_plan, consulta)
     respuesta = "Resultados de la operacion:\n\n"
     for r in resultados:
         if r.get("exitoso", False) and "resultado" in r:
@@ -403,6 +436,7 @@ def procesar_consulta_modo_demo(consulta: str) -> str:
     return respuesta
 
 
+@traceable_si_habilitado(name="procesar_llm", tags=["cli", "llm", MODELO_POR_DEFECTO])
 def procesar_consulta_llm(consulta: str, memoria_tipo: str = "buffer") -> str:
     """Procesa consultas usando el LLM con el tipo de memoria especificado."""
     plan = planificador.crear_plan(consulta)
@@ -422,9 +456,27 @@ def procesar_consulta_llm(consulta: str, memoria_tipo: str = "buffer") -> str:
     }
     executor = executors.get(memoria_tipo, executor_buffer)
 
+    # IL3.2: buscar en cache semantico antes de llamar al LLM
+    encontrado, respuesta_cache, similitud = cache_cli.buscar(consulta)
+    if encontrado:
+        tokens_ahorrados = estimar_tokens(consulta)
+        cache_cli.registrar_ahorro(tokens=tokens_ahorrados)
+        agente_obs.metricas.registrar(0.0, tokens_ahorrados, 0, True, modelo="cache")
+        registrar_metricas_langsmith(0.0, tokens_ahorrados, 0, True,
+                                     modelo="cache", cache_hit=True)
+        cli_log.info("Cache HIT: similitud=%.4f | tokens_ahorrados=%d | consulta=%r",
+                      similitud, tokens_ahorrados, consulta[:80])
+        registrar_accion(consulta, "cache", True, respuesta_cache[:200])
+        return respuesta_cache
+
     try:
-        response = executor.invoke({"input": consulta})
+        response = agente_obs.medir_llm(executor, {"input": consulta}, modelo=MODELO_POR_DEFECTO)
         texto = response["output"]
+
+        # IL3.2: guardar en cache con estimacion real de tokens
+        tokens_guardados = estimar_tokens(consulta + texto)
+        cache_cli.guardar(consulta, texto, tokens_usados=tokens_guardados)
+
         registrar_accion(consulta, "llm", True, texto[:200])
         return texto
     except Exception as e:
@@ -541,8 +593,17 @@ def loop_principal():
             continue
         if consulta in ("/seguridad", "/security"):
             print("\n=== METRICAS DE SEGURIDAD ===")
-            for k, v in seguridad.obtener_metricas().items():
-                print(f"  {k}: {v}")
+            metricas = seguridad.obtener_metricas()
+            print("  --- Bloqueos ---")
+            for k in ["total_validaciones", "bloqueados_rate_limit", "bloqueados_inyeccion",
+                       "bloqueados_etico", "bloqueados_semantico"]:
+                print(f"  {k}: {metricas.get(k, 0)}")
+            print("  --- PII ---")
+            for k in ["pii_detectados_input", "pii_detectados_output"]:
+                print(f"  {k}: {metricas.get(k, 0)}")
+            print("  --- Similitud Coseno ---")
+            for k in ["similitud_coseno_promedio", "total_comparaciones_similitud", "baja_similitud_salida"]:
+                print(f"  {k}: {metricas.get(k, 0)}")
             print()
             continue
 
@@ -550,7 +611,7 @@ def loop_principal():
         validacion = seguridad.validar_entrada(consulta, rate_limit_key="cli")
         if not validacion["permitido"]:
             codigo = validacion.get("codigo", "DENEGADO")
-            print(f"\n[SEGURIDAD] {codigo}: {validacion['error']}")
+            cli_log.warning("SEGURIDAD %s: %s", codigo, validacion["error"])
             registrar_accion(consulta, "seguridad", False, f"Bloqueado: {codigo}")
             activo = mostrar_pregunta_final()
             continue
@@ -576,7 +637,7 @@ def loop_principal():
             print("  o /verificar para revisar cual calificas con tu saldo real.")
             print("------------------\n")
 
-        print("\n--- Procesando consulta ---")
+        cli_log.info("Procesando consulta...")
         if MODO_DEMO:
             respuesta = procesar_consulta_modo_demo(consulta_segura)
         else:
@@ -584,7 +645,12 @@ def loop_principal():
 
         validacion_salida = seguridad.validar_salida(respuesta)
         if validacion_salida["tiene_pii"]:
-            print(f"[SEGURIDAD] PII detectado en respuesta: {validacion_salida['pii_detectada']}")
+            cli_log.warning("PII detectado en respuesta: %s", validacion_salida["pii_detectada"])
+        similitud_info = validacion_salida.get("similitud")
+        if similitud_info:
+            if similitud_info["baja_similitud"]:
+                cli_log.warning("Baja similitud coseno raw vs final: %.4f (metodo: %s)",
+                                similitud_info["similitud_coseno"], similitud_info["metodo"])
         respuesta = validacion_salida["corregida"]
 
         print(f"\nRespuesta: {respuesta}")
@@ -598,6 +664,21 @@ def loop_principal():
         enviar_reporte_sesion()
     else:
         print("  No hubo acciones que reportar.")
+    print(f"\n{agente_obs.reporte()}")
+
+    stats_cache = cache_cli.obtener_estadisticas()
+    if stats_cache.get("total_consultas", 0) > 0:
+        print(f"\n{'=' * 60}")
+        print(f"  CACHE SEMANTICO (IL3.2)")
+        print(f"{'=' * 60}")
+        print(f"  Total consultas:   {stats_cache['total_consultas']}")
+        print(f"  Cache hits:        {stats_cache['hits']} ({stats_cache['tasa_hits']}%)")
+        print(f"  Cache misses:      {stats_cache['misses']}")
+        print(f"  Tokens ahorrados:  {stats_cache['tokens_ahorrados_total']}")
+        print(f"  Costo ahorrado:    ${stats_cache['costo_ahorrado_usd']:.4f} USD")
+        print(f"  Entradas activas:  {stats_cache['entradas_activas']}")
+        print(f"{'=' * 60}")
+
     print("[!] Gracias por usar BancoEstado Asistente Virtual.")
 
 
