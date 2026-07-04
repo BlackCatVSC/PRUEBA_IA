@@ -12,7 +12,7 @@ async function sendToServer(message) {
     const ids = getServerSessionIds();
     const user = getSessionUser();
     const body = { message };
-    if (user && user.rut) body.rut = user.rut;
+    if (user && user.token) body.token = user.token;
     if (ids[currentSessionId]) {
         body.session_id = ids[currentSessionId];
     }
@@ -23,6 +23,12 @@ async function sendToServer(message) {
     });
     const data = await res.json();
     if (!res.ok) {
+        if (data.codigo === 'NO_AUTH') {
+            clearSession();
+            updateUserGreeting('');
+            updateChatState();
+            setTimeout(() => openLogin(), 200);
+        }
         throw new Error(data.error || 'Error del servidor');
     }
     if (data.session_id) {
@@ -195,7 +201,7 @@ async function handleRegister() {
         const data = await res.json();
 
         if (data.success) {
-            saveSessionUser(data.user);
+            saveSessionUser({ ...data.user, token: data.token });
             updateUserGreeting(data.user.name);
             updateChatState();
             closeRegister();
@@ -241,7 +247,7 @@ async function handleLogin() {
         const data = await res.json();
 
         if (data.success) {
-            saveSessionUser(data.user);
+            saveSessionUser({ ...data.user, token: data.token });
             updateUserGreeting(data.user.name);
             updateChatState();
             closeLogin();
@@ -455,8 +461,8 @@ function loadAccounts() {
     container.innerHTML = '<div class="text-center py-8 text-on-surface-variant/50"><span class="material-symbols-outlined animate-spin inline-block text-[24px]">progress_activity</span></div>';
 
     const user = getSessionUser();
-    const rutParam = (user && user.rut) ? '?rut=' + encodeURIComponent(user.rut) : '';
-    fetch('/api/cuentas' + rutParam)
+    const tokenParam = (user && user.token) ? '?token=' + encodeURIComponent(user.token) : '';
+    fetch('/api/cuentas' + tokenParam)
         .then(r => r.json())
         .then(data => {
             if (data.error) { container.innerHTML = '<p class="text-error text-center py-4">' + data.error + '</p>'; return; }
