@@ -19,6 +19,9 @@ os.environ["LANGCHAIN_API_KEY"] = os.environ.get("LANGSMITH_API_KEY", "")
 os.environ["LANGCHAIN_PROJECT"] = os.environ.get("LANGSMITH_PROJECT", "default")
 
 from herramientas.config import MODELO_POR_DEFECTO
+from herramientas.observability import AgenteObservable, get_logger
+
+web_log = get_logger("web.bancoestado")
 
 MODO_DEMO = not bool(os.environ.get("GITHUB_TOKEN"))
 
@@ -33,15 +36,12 @@ from herramientas.herramientas_bancoestado import TOOL_LIST
 from herramientas.planificador import Planificador, Orquestador
 from herramientas.seguridad import OrquestadorSeguridad, DetectorPII, SanitizadorEntrada
 from herramientas.bancoestado_api import BancoEstadoAPI
-from herramientas.observability import AgenteObservable, get_logger
 from herramientas.langsmith_config import (LangSmithConfig, traceable_si_habilitado,
                                            registrar_metricas_langsmith)
 from herramientas.config import (MODELO_POR_DEFECTO, CACHE_UMBRAL_SIMILITUD,
                                  CACHE_TTL_SEGUNDOS, PROCESADOR_TAMANO_LOTE,
                                  ANOMALIAS_VENTANA, ANOMALIAS_FACTOR_SPIKE,
                                  ANOMALIAS_UMBRAL_ERROR, ANOMALIAS_UMBRAL_CACHE)
-
-web_log = get_logger("web.bancoestado")
 
 TOOL_MAP = {tool.name: tool for tool in TOOL_LIST}
 planificador = Planificador()
