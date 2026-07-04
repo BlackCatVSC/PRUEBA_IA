@@ -35,4 +35,4 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV FLASK_DEBUG=0
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--preload", "--workers", "2", "--worker-class", "gthread", "--threads", "2", "--timeout", "120", "--keep-alive", "5", "--max-requests", "1000", "--max-requests-jitter", "50", "--access-logfile", "/app/logs/access.log", "--error-logfile", "/app/logs/error.log", "--log-level", "info", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--worker-class", "gthread", "--threads", "4", "--timeout", "120", "--keep-alive", "5", "--max-requests", "1000", "--max-requests-jitter", "50", "--access-logfile", "/app/logs/access.log", "--error-logfile", "/app/logs/error.log", "--log-level", "info", "app:app"]

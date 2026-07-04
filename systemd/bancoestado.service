@@ -20,10 +20,9 @@ ExecStartPre=/bin/mkdir -p /opt/bancoestado/logs /opt/bancoestado/memoria /opt/b
 ExecStartPre=/bin/sh -c '/opt/bancoestado/.venv/bin/python -c "from app import init_db; init_db()" || true'
 ExecStart=/opt/bancoestado/.venv/bin/gunicorn \
     --bind 127.0.0.1:5000 \
-    --preload \
-    --workers 2 \
+    --workers 1 \
     --worker-class gthread \
-    --threads 2 \
+    --threads 4 \
     --timeout 120 \
     --keep-alive 5 \
     --max-requests 1000 \
