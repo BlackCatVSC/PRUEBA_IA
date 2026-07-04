@@ -114,7 +114,9 @@ def consultar_productos() -> str:
 
 @tool
 def actualizar_saldo(monto: float, tipo_cuenta: str = "CuentaRUT") -> str:
-    """SOLO para depositos externos (loteria, herencia, ingreso de dinero externo). Agrega un monto POSITIVO a una cuenta (CuentaRUT o CuentaAhorros). NO acepta montos negativos. NO la uses para transferir entre cuentas del cliente, usa 'transferir' para eso."""
+    """SOLO para depositos externos (loteria, herencia, ingreso de dinero externo). Agrega un monto POSITIVO a una cuenta (CuentaRUT o CuentaAhorros). NO acepta montos negativos. NO la uses para transferir entre cuentas del cliente, usa 'transferir' para eso. Monto maximo permitido: $50.000.000."""
+    if monto > 50_000_000:
+        return json.dumps({"success": False, "error": "Montos superiores a $50.000.000 requieren validacion presencial en sucursal"}, ensure_ascii=False)
     return api.actualizar_saldo(get_rut_actual(), tipo_cuenta, monto)
 
 

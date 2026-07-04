@@ -4,6 +4,7 @@ import time
 import json
 import unicodedata
 from typing import Optional
+from herramientas.similitud import CalculadorSimilitud
 
 # ─── MAPA DE CARACTERES ESPECIALES Y LEETSPEAK ───────────────
 # Caracteres que NO se descomponen con NFKD y son usados para bypass
@@ -32,7 +33,7 @@ MAPA_CONFUSABLES = {
     '\u0299': 'b', '\u1D04': 'c', '\u1D05': 'd', '\u029F': 'l',
     '\u1D0D': 'm', '\u0274': 'n', '\u0280': 'r', '\u1D20': 'v',
     '\u0262': 'g', '\u029C': 'h', '\u1D0A': 'j', '\u1D0B': 'k',
-    '\u1D1C': 'u', '\u028F': 'y', '\uA731': 's', '\u1D00': 'a',
+    '\u1D1C': 'u', '\u028F': 'y', '\uA731': 's',
     # Cyrillic homoglyphs
     '\u0430': 'a', '\u0435': 'e', '\u043E': 'o', '\u0440': 'p',
     '\u0441': 'c', '\u0443': 'y', '\u0445': 'x', '\u0456': 'i',
@@ -48,7 +49,7 @@ MAPA_CONFUSABLES = {
     '\u039F': 'O', '\u03A1': 'P', '\u039D': 'N', '\u039A': 'K',
     '\u039C': 'M', '\u03A4': 'T', '\u0392': 'B', '\u0395': 'E',
     '\u0397': 'H', '\u0399': 'I', '\u03A5': 'Y', '\u03A7': 'X',
-    '\u0391': 'A', '\u0396': 'Z', '\u0392': 'B',
+    '\u0391': 'A', '\u0396': 'Z',
     # Mathematical / other confusables
     '\u212A': 'K',  # Kelvin sign -> K
     '\u212C': 'B',  # Script B
@@ -59,14 +60,11 @@ MAPA_CONFUSABLES = {
     '\u2112': 'L',  # Script L
     '\u2133': 'M',  # Script M
     '\u2118': 'P',  # Script P
-    '\u211A': 'Q',  # Script Q
     '\u211D': 'R',  # Script R
     '\u2102': 'C',  # Double-struck C
     '\u210D': 'H',  # Double-struck H
     '\u2115': 'N',  # Double-struck N
     '\u2119': 'P',  # Double-struck P
-    '\u211A': 'Q',  # Double-struck Q
-    '\u211D': 'R',  # Double-struck R
     '\u2124': 'Z',  # Double-struck Z
     '\uFF10': '0', '\uFF11': '1', '\uFF12': '2', '\uFF13': '3',
     '\uFF14': '4', '\uFF15': '5', '\uFF16': '6', '\uFF17': '7',
@@ -104,9 +102,21 @@ CATEGORIAS_RESTRINGIDAS = {
         "palabras": ["mata", "matar", "muere", "bomba", "atentado", "arma", "asesinato", "asesinar"],
         "motivo": "Contenido violento no permitido",
     },
+    "autolesion": {
+        "palabras": ["suicida", "suicidio", "suicidar", "matarme", "autolesion", "autolesionar", "cortarme las venas", "quitarme la vida"],
+        "motivo": "Contenido de autolesion no permitido",
+    },
     "contenido_ilegal": {
         "palabras": ["hackear", "phishing", "estafa", "fraude", "suplantar", "clonar tarjeta", "robar cuenta"],
         "motivo": "Actividad ilegal no permitida",
+    },
+    "csam": {
+        "palabras": ["pornografia infantil", "abuso infantil", "explotacion infantil", "contenido infantil ilegal", "menores de edad", "pedofil"],
+        "motivo": "Contenido de explotacion infantil no permitido",
+    },
+    "odio": {
+        "palabras": ["discriminacion racial", "odio racial", "xenofob", "homofob", "transfob", "discurso de odio", "supremacia", "genocidio"],
+        "motivo": "Discurso de odio no permitido",
     },
     "manipulacion": {
         "palabras": [
@@ -169,7 +179,7 @@ PATRONES_INYECCION = [
     r'__import__\s*\(',
     r'subprocess',
     r'os\.system',
-    r'open\s*\(',
+    r'open\s*\(\s*["\']',
 ]
 
 LIMITE_LONGITUD_INPUT = 4000
@@ -278,11 +288,16 @@ class SanitizadorEntrada:
     @staticmethod
     def _colapsar_bypass_characters(texto: str) -> str:
         """Colapsa separadores comunes usados para evadir deteccion.
-        Guiones, asteriscos, virgulillas (1+): i-g-n-o-r-a -> ignora, hack****ear -> hackear.
-        Puntos solo se colapsan en secuencias de 2+ para preservar sintaxis valida como os.system.
-        es...tafa -> estafa, pero os.system -> os.system"""
+        Guiones, asteriscos, virgulillas, signos mas, numerales: i-g-n-o-r-a -> ignora.
+        Puntos: secuencias de 3+ letras separadas por punto simple se colapsan
+        (i.g.n.o.r.a -> ignora) pero os.system queda intacto (< 3 partes).
+        es...tafa -> estafa (puntos multiples concatenados).
+        Otros separadores (_, /, |, :, backtick) solo se colapsan en secuencias
+        de 3+ chars, preservando sintaxis como __import__ y os.system."""
         texto = re.sub(r'(\w)[\-\*\~\+\#]+(?=\w)', r'\1', texto)
         texto = re.sub(r'(\w)\.{2,}(?=\w)', r'\1', texto)
+        texto = re.sub(r'\b(\w)(\.(\w)){2,}', lambda m: m.group(0).replace('.', ''), texto)
+        texto = re.sub(r'\b(\w)([_/|:`](\w)){2,}', lambda m: re.sub(r'[_/|:`]', '', m.group(0)), texto)
         return texto
 
     @classmethod
@@ -417,11 +432,24 @@ class RateLimiter:
         if key not in self._historial:
             self._historial[key] = []
         self._historial[key] = [t for t in self._historial[key] if ahora - t < self.ventana_segundos]
+        if not self._historial[key]:
+            del self._historial[key]
+            self._historial[key] = []
         if len(self._historial[key]) >= self.max_peticiones:
             tiempo_restante = int(self.ventana_segundos - (ahora - self._historial[key][0]))
             return {"permitido": False, "tiempo_restante": tiempo_restante, "motivo": f"Demasiadas solicitudes. Espera {tiempo_restante}s"}
         self._historial[key].append(ahora)
         return {"permitido": True, "tiempo_restante": 0, "contador": len(self._historial[key])}
+
+    def _limpiar_expirados(self):
+        """Elimina claves cuyo historial ya expiro completamente."""
+        ahora = time.time()
+        expiradas = [
+            k for k, v in self._historial.items()
+            if not v or all(ahora - t >= self.ventana_segundos for t in v)
+        ]
+        for k in expiradas:
+            del self._historial[k]
 
     def limpiar(self, key: str):
         self._historial.pop(key, None)
@@ -551,6 +579,7 @@ class OrquestadorSeguridad:
     def __init__(self, llm=None):
         self.rate_limiter = RateLimiter()
         self.clasificador_semantico = ClasificadorSemantico(llm) if llm else None
+        self.calculador_similitud = CalculadorSimilitud(llm=llm)
         self.metricas = {
             "total_validaciones": 0,
             "bloqueados_inyeccion": 0,
@@ -559,11 +588,16 @@ class OrquestadorSeguridad:
             "bloqueados_semantico": 0,
             "pii_detectados_input": 0,
             "pii_detectados_output": 0,
+            "similitud_coseno_promedio": 0.0,
+            "total_comparaciones_similitud": 0,
+            "baja_similitud_salida": 0,
         }
 
     def validar_entrada(self, mensaje: str, rate_limit_key: str = "default") -> dict:
         """Flujo completo de validacion de entrada con 5 capas."""
         self.metricas["total_validaciones"] += 1
+
+        self.rate_limiter._limpiar_expirados()
 
         rate = self.rate_limiter.permitir(rate_limit_key)
         if not rate["permitido"]:
@@ -606,6 +640,20 @@ class OrquestadorSeguridad:
         validacion = ValidadorSalida.validar(respuesta)
         if validacion["tiene_pii"]:
             self.metricas["pii_detectados_output"] += len(validacion["pii_detectada"])
+
+        respuesta_corregida = validacion["corregida"]
+        if respuesta and respuesta_corregida:
+            comparacion = self.calculador_similitud.comparar(respuesta, respuesta_corregida)
+            self.metricas["total_comparaciones_similitud"] += 1
+            n = self.metricas["total_comparaciones_similitud"]
+            promedio_anterior = self.metricas["similitud_coseno_promedio"]
+            self.metricas["similitud_coseno_promedio"] = round(
+                (promedio_anterior * (n - 1) + comparacion["similitud_coseno"]) / n, 4
+            )
+            if comparacion["baja_similitud"]:
+                self.metricas["baja_similitud_salida"] += 1
+            validacion["similitud"] = comparacion
+
         return validacion
 
     def obtener_metricas(self) -> dict:
